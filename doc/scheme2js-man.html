@@ -1,0 +1,675 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!-- Manual page created with latex2man on Sun Jul 17 15:54:28 CEST 2011 --
+-- Author of latex2man: Juergen.Vollmer@informatik-vollmer.de --
+-- NOTE: This file is generated, DO NOT EDIT. -->
+<html>
+<head><title>SCHEME2JS</title></head>
+<body bgcolor="white">
+<h1 align=center>
+scheme2js 
+</h1>
+<h4 align=center>Florian Loitsch </h4>
+<h4 align=center>17 July 2011</h4>
+<h4 align=center>Version 20110717</h4>
+<tt>scheme2js</tt>
+- compiles Scheme programs to JavaScript 
+<h3>Table of Contents</h3>
+<ul>
+<li><a href="#section_1">Synopsis </a></li>
+<li><a href="#section_2">Description </a></li>
+<li><a href="#section_3">Options </a>
+<ul>
+<li><a href="#section_4">IO </a></li>
+<li><a href="#section_5">Information </a></li>
+<li><a href="#section_6">JavaScript Interface </a></li>
+<li><a href="#section_7">Optimizations </a></li>
+<li><a href="#section_8">Trampolines and Call/cc </a></li>
+<li><a href="#section_9">Debug </a></li>
+</ul>
+<li><a href="#section_10">Files </a></li>
+<li><a href="#section_11">Modules </a></li>
+<li><a href="#section_12">Infotrons </a></li>
+<li><a href="#section_13">See Also </a></li>
+<li><a href="#section_14">Bugs </a></li>
+<li><a href="#section_15">Author </a></li>
+<li><a href="#section_16">Version </a></li>
+</ul>
+<p>
+<h2><a name="section_1">Synopsis</a></h2>
+
+<tt>scheme2js</tt>
+[<b>-h|--help</b>]
+[<b>--version</b>]
+[<b>-v|--verbose</b>]
+[<b>--js-dot-notation</b>]
+[<b>--bigloo-modules</b>]
+[<b>--compress</b>]
+[<b>--infotron</b>]
+[<b>--encapsulate-modules</b>]
+[<b>--export-globals</b>]
+[<b>--allow-unresolved</b>]
+[<b>--js-this</b>]
+[<b>--js-return</b>]
+[<b>--statics-suffix</b><i> suffix</i>]
+[<b>--constant-runtime</b>]
+[<b>--indent</b><i> width</i>]
+[<b>-O</b><i> level</i>]
+[<b>--tailrec</b>]
+[<b>--while</b>]
+[<b>--inlining</b>]
+[<b>--max-inline-size</b><i> size</i>]
+[<b>--rec-inline-nb</b><i> nb</i>]
+[<b>--var-elimination</b>]
+[<b>--propagation</b>]
+[<b>--constant-propagation</b>]
+[<b>--bigloo-runtime-eval</b>]
+[<b>--correct-modulo</b>]
+[<b>--optimize-calls</b>]
+[<b>--optimize-boolify</b>]
+[<b>--optimize-consts</b>]
+[<b>--trampoline</b>]
+[<b>--max-tail-depth</b><i> depth</i>]
+[<b>--suspend-resume</b>]
+[<b>--call/cc</b>]
+[<b>-g</b>]
+[<b>-d</b><i> stage</i>]
+[<b>-I</b><i> dir</i>]
+<b>-o</b><i> outfile</i>
+<i>infile</i>
+<h2><a name="section_2">Description</a></h2>
+
+<tt>scheme2js</tt>
+takes <i>infile</i>
+and writes to <i>outfile</i>.
+If 
+<i>in</i>/<i>outfile</i>
+is <tt>'-'</tt>
+stdin/out is used. The input must be a 
+Scheme file. <tt>scheme2js</tt>
+translates the program into JavaScript. 
+<h2><a name="section_3">Options</a></h2>
+
+All boolean options can be prefixed with <tt>'no-'</tt>,
+to deactivate them. For 
+example <tt>'--no-js-dot-notation'</tt>
+would disable JavaScript's dot-notation.<br>
+
+Options are evaluated in order. If conflicting options are given, the last 
+entry wins. This allows to use <b>-O</b>
+and then to adjust the values subsequently. 
+<h4><a name="section_4">IO</a></h4>
+
+<p>
+<dl compact>
+<dt><b>-o</b><i> outfile</i>
+</dt>
+<dd> Write output into <i>outfile</i>.
+If <i>outfile</i>
+equals "-" 
+then the result will be printed to stdout. 
+</dd>
+<dt><b>-I</b><i> dir</i>
+</dt>
+<dd> Add <i>dir</i>
+to Include-path. This path will be searched for 
+imported modules. 
+</dd>
+<dt><i>infile</i>
+</dt>
+<dd> The Scheme Input-file. 
+</dd>
+<dt><b>--compress</b>
+</dt>
+<dd> Compress the generated output. Nearly all unnecessary 
+spaces are removed. 
+</dd>
+</dl>
+<h4><a name="section_5">Information</a></h4>
+
+<p>
+<dl compact>
+<dt><b>-h|--help</b>
+</dt>
+<dd> Prints a help-message. 
+</dd>
+<dt><b>--version</b>
+</dt>
+<dd> Prints the version of <tt>scheme2js</tt>.
+</dd>
+<dt><b>-v|--verbose</b>
+</dt>
+<dd> Activate verbose output. 
+</dd>
+</dl>
+<h4><a name="section_6">JavaScript Interface</a></h4>
+
+<p>
+<dl compact>
+<dt><b>--js-dot-notation</b>
+</dt>
+<dd> Allow JavaScript dot-notation in 
+source-file. This allows access to object-properties like <tt>o.x</tt>. 
+</dd>
+<dt><b>--infotron</b>
+</dt>
+<dd> Activates support for Infotrons. See Section Infotron 
+for more details. 
+</dd>
+<dt><b>--bigloo-modules</b>
+</dt>
+<dd> Uses Bigloo style module declarations (see 
+the Modules section below). 
+</dd>
+<dt><b>--encapsulate-modules</b>
+</dt>
+<dd> Wrap the module (the compiled file) into an 
+anonymous function. Global variables that are not exported (for instance 
+top-level <tt>'let'</tt>-variables)
+thus do not pollute the JavaScript 
+top-level. 
+</dd>
+<dt><b>--export-globals</b>
+</dt>
+<dd> Export all global variables. Variables 
+introduced by global <tt>'let'</tt>s
+are not affected by this flag. By default 
+all global variables of files without 'module'-clause are exported. Files with 
+'module'-clause do only export variables declared in the module-clause. 
+</dd>
+<dt><b>--allow-unresolved</b>
+</dt>
+<dd> Variables that are unresolved are supposed to 
+be JavaScript variables or exported variables from other modules. By default 
+files without 'module'-clause allow unresolved. Files with a 'module'-clause 
+yield error-messages on unknown variables. 
+</dd>
+<dt><b>--js-this</b>
+</dt>
+<dd> Allow the access of JavaScript's <tt>'this'</tt>
+inside 
+Scheme procedures. 
+</dd>
+<dt><b>--js-return</b>
+</dt>
+<dd> Introduces a special form: <tt>'return'</tt>,
+which has 
+the same semantics as JavaScript's <tt>'return'</tt>.
+</dd>
+<dt><b>--constant-runtime</b>
+</dt>
+<dd> Assume runtime is constant. Disallows 
+assignments to runtime-functions. When enabled the interface files 
+<tt>runtime_interface.js</tt>
+and 
+<tt>runtime_interface_callcc.js</tt>
+are not needed anymore. 
+</dd>
+<dt><b>--statics-suffix</b><i> suffix</i>
+</dt>
+<dd> Sets the suffix for 
+static variables. Static variables are global variables that are not 
+exported. This avoids name-clashes with non-exported variables of different 
+modules. If a module is encapsulated, then this flag has no effect. By default 
+'_' followed by the file-name without extension is used (which is the same as 
+the module's name). 
+</dd>
+<dt><b>--indent</b><i> width</i>
+</dt>
+<dd> Sets the indentation width for the 
+produced code. 
+</dd>
+</dl>
+<h4><a name="section_7">Optimizations</a></h4>
+
+<p>
+<dl compact>
+<dt><b>--tailrec</b>
+</dt>
+<dd> Transform (obvious) tail-recursive loops into 
+<tt>'while'</tt>-loops.
+</dd>
+<dt><b>--while</b>
+</dt>
+<dd> Searches for common loop-pattern. Improves the generated 
+<tt>'while'</tt>-loops.
+</dd>
+<dt><b>--inlining</b>
+</dt>
+<dd> Inlines (small) functions, and functions, that are only 
+used once (-> no code size increase). 
+</dd>
+<dt><b>--max-inline-size</b><i> size</i>
+</dt>
+<dd> Only inline functions smaller 
+than <i>size</i>.
+The calculated size is a rough estimate of the final 
+code-size. Small functions have a size of about 30. 
+</dd>
+<dt><b>--rec-inline-nb</b><i> nb</i>
+</dt>
+<dd> Inline at most <i>nb</i>
+nested 
+functions. That is, if a function has been inlined, continue inlining inside 
+the inlined function's body, but only <i>nb</i>
+times. A value of 1 forbits 
+inlining inside the body of an inlined function. Functions that are only called 
+at one location are exempted from this limitation. 
+</dd>
+<dt><b>--var-elimination</b>
+</dt>
+<dd> Reduce the number of variables, by substituting 
+variables. <tt>'(let ((x expr)) (let ((y x)) ....))'</tt>
+becomes 
+<tt>'(let ((y expr)) ...)'</tt>.
+</dd>
+<dt><b>--propagation</b>
+</dt>
+<dd> Enables constant-propagation. Whenever possible 
+var-references are propagated too: if variable <tt>'x'</tt>
+has the same value as 
+<tt>'y'</tt>
+the references to <tt>'x'</tt>
+are replaced by a reference to 
+<tt>'y'</tt>.
+</dd>
+<dt><b>--constant-propagation</b>
+</dt>
+<dd> Propagates constant variables. Suppose 
+<tt>'x'</tt>
+is initialized with a constant value <tt>'c'</tt>.
+Then all references 
+to <tt>'x'</tt>
+are replaced by <tt>'c'</tt>
+</dd>
+<dt><b>--bigloo-runtime-eval</b>
+</dt>
+<dd> Use a Bigloo 'eval' during compilation when 
+a constant expressions (for instance '(+ 2 5)) is encountered. Only a limited 
+'safe' subset of runtime-functions are evaluated this way. However the result 
+might not be the same as if evaluated at runtime. For example (/ 5 2) would 
+yield 2 when evaluated by Bigloo, but yields 2.5 when evaluated at runtime. 
+</dd>
+<dt><b>--correct-modulo</b>
+</dt>
+<dd> The semantics of Scheme's and JavaScript's modulo 
+differ. With this flag the more expensive R5RS modulo is simulated in 
+JavaScript. Only of relevance when <b>--optimize-calls</b>
+is activated. 
+</dd>
+<dt><b>--optimize-calls</b>
+</dt>
+<dd> Peephole optimization of small 
+runtime-functions. Runtime functions like <tt>'+'</tt>,
+<tt>'null?'</tt>,
+etc. are 
+directly inlined with their JavaScript equivalent and do not invoke any 
+function-call. 
+</dd>
+<dt><b>--optimize-boolify</b>
+</dt>
+<dd> During boolification do not test against 
+<tt>'false'</tt>
+if the expression is known to be of type bool. 
+</dd>
+<dt><b>--optimize-consts</b>
+</dt>
+<dd> Store explicit constants (like lists and 
+vectors) in global variables, so they are not recreated. 
+</dd>
+<dt><b>-O</b><i> level</i>
+</dt>
+<dd> Sets the optimization level (default is 
+<b>-O </b><i> 1</i>).<br>
+
+Each optimization level enables/disables several flags at once: 
+<dl compact>
+<dt>-O0</dt>
+<dd> <b>--no-tailrec</b>
+<b>--no-inlining</b>
+<b>--no-inline-runtime</b>
+<b>--no-constant-runtime</b>
+<b>--no-propagation</b>
+<b>--no-constant-propagation</b>
+<b>--no-while</b>
+<b>--correct-modulo</b>
+<b>--no-optimize-calls</b>
+<b>--no-optimize-boolify</b>
+<b>--no-optimize-set!</b>
+<b>--max-tail-depth</b><i> 40</i>
+<b>--no-var-elimination</b>
+<b>--no-optimize-consts</b>
+<b>--no-bigloo-runtime-eval</b>
+</dd>
+<dt>-O1</dt>
+<dd> <b>--tailrec</b>
+<b>--inlining</b>
+<b>--max-rec-inline</b><i> 3</i>
+<b>--max-inline-size</b><i> 30</i>
+<b>--inline-runtime</b>
+<b>--constant-runtime</b>
+<b>--propagation</b>
+<b>--constant-propagation</b>
+<b>--while</b>
+<b>--no-correct-modulo</b>
+<b>--optimize-calls</b>
+<b>--optimize-boolify</b>
+<b>--optimize-set!</b>
+<b>--max-tail-depth</b><i> 40</i>
+<b>--var-elimination</b>
+<b>--optimize-consts</b>
+<b>--no-bigloo-runtime-eval</b>
+</dd>
+<dt>-O2</dt>
+<dd> <b>--tailrec</b>
+<b>--inlining</b>
+<b>--max-rec-inline</b><i> 1</i>
+<b>--max-inline-size</b><i> 15</i>
+<b>--no-inline-runtime</b>
+<b>--constant-runtime</b>
+<b>--propagation</b>
+<b>--constant-propagation</b>
+<b>--while</b>
+<b>--no-correct-modulo</b>
+<b>--optimize-calls</b>
+<b>--optimize-boolify</b>
+<b>--optimize-set!</b>
+<b>--max-tail-depth</b><i> 40</i>
+<b>--var-elimination</b>
+<b>--optimize-consts</b>
+<b>--bigloo-runtime-eval</b>
+</dd>
+<dt>-O3</dt>
+<dd> <b>--tailrec</b>
+<b>--inlining</b>
+<b>--max-rec-inline</b><i> 4</i>
+<b>--max-inline-size</b><i> 45</i>
+<b>--inline-runtime</b>
+<b>--constant-runtime</b>
+<b>--propagation</b>
+<b>--constant-propagation</b>
+<b>--while</b>
+<b>--no-correct-modulo</b>
+<b>--optimize-calls</b>
+<b>--optimize-boolify</b>
+<b>--optimize-set!</b>
+<b>--max-tail-depth</b><i> 40</i>
+<b>--var-elimination</b>
+<b>--optimize-consts</b>
+</dd>
+<dt>-Obench</dt>
+<dd> <b>--tailrec</b>
+<b>--inlining</b>
+<b>--max-rec-inline</b><i> 4</i>
+<b>--max-inline-size</b><i> 45</i>
+<b>--inline-runtime</b>
+<b>--constant-runtime</b>
+<b>--propagation</b>
+<b>--constant-propagation</b>
+<b>--while</b>
+<b>--no-correct-modulo</b>
+<b>--optimize-calls</b>
+<b>--optimize-boolify</b>
+<b>--optimize-set!</b>
+<b>--max-tail-depth</b><i> 40</i>
+<b>--var-elimination</b>
+<b>--optimize-consts</b>
+<b>--bigloo-runtime-eval</b>
+</dd>
+</dl>
+</dd>
+</dl>
+<h4><a name="section_8">Trampolines and Call/cc</a></h4>
+
+<p>
+<dl compact>
+<dt><b>--trampoline</b>
+</dt>
+<dd> Enables trampolines. The given implementation does 
+not provide naive trampolines, but a more efficient version that only 
+returns trampolines after a constant number of tail-calls. 
+</dd>
+<dt><b>--max-tail-depth</b><i> depth</i>
+</dt>
+<dd> Sets the maximum depth of 
+consecutive tail-calls before a trampoline is returned. This option is only 
+relevant when trampolines are enabled. 
+</dd>
+<dt><b>--suspend-resume</b>
+</dt>
+<dd> Enables <tt>'suspend/resume'</tt>,
+a weaker (but 
+faster) version of <tt>'call/cc'</tt>.
+A call to <tt>'suspend'</tt>
+captures the 
+current continuation. <tt>'Suspend'</tt>
+does not return however, and the only 
+way to continue the execution is to invoke the captured continuation. The 
+captured continuation can only be invoked once. This form is useful, when the 
+program needs to pause, and wait for an event. 
+</dd>
+<dt><b>--call/cc</b>
+</dt>
+<dd> Enables <tt>'call/cc'</tt>.
+</dd>
+<dt><b>--extern-invokes-call/cc</b>
+</dt>
+<dd> Assume imported variables (or unresolved 
+variables) call <tt>'call/cc'</tt>
+(even if they do not have a <tt>'call/cc'</tt>
+entry in their <tt>'export'</tt>-clause).
+</dd>
+</dl>
+<h4><a name="section_9">Debug</a></h4>
+
+<p>
+<dl compact>
+<dt><b>-g</b>
+</dt>
+<dd> Adds debugging information. 
+</dd>
+<dt><b>-d</b><i> stage</i>
+</dt>
+<dd> Depending on <tt>'stage'</tt>
+either print 
+the expanded source, or a Scheme-version of the AST at the chosen compilation 
+stage (into <i>outfile</i>).
+If you really need this, have a look at the 
+source for valid <tt>'stage'</tt>s.
+</dd>
+</dl>
+<h2><a name="section_10">Files</a></h2>
+
+<p>
+<dl compact>
+<dt><tt>share/runtime.js</tt>
+</dt>
+<dd> The runtime stripped of 
+<tt>'call/cc'</tt>-related
+procedures. 
+</dd>
+<dt><tt>share/runtime_interface.js</tt>
+</dt>
+<dd> Compiled programs access 
+the runtime through the variables declared in this file. Only needed, when 
+<tt>'--constant-runtime'</tt>
+is not used. 
+</dd>
+<dt><tt>share/runtime_callcc.js</tt>
+</dt>
+<dd> The <tt>'call/cc'</tt>
+part of 
+the runtime. If a program is compiled without <tt>'call/cc'</tt>
+or 
+<tt>'suspend/resume'</tt>
+support, then this file is not needed. 
+</dd>
+<dt><tt>share/runtime_interface_callcc.js</tt>
+</dt>
+<dd> Compiled programs 
+access the <tt>'call/cc'</tt>
+runtime through variables declared in this 
+file. Only needed, when the program has been compiled with <tt>'call/cc'</tt>
+or 
+<tt>'suspend/resume'</tt>
+support and 
+<tt>'--constant-runtime'</tt>
+is not activated. 
+</dd>
+</dl>
+<h2><a name="section_11">Modules</a></h2>
+
+Bigger programs can be split into modules. In this case the first expression 
+of the input-file must be a module-clause. Currently two 
+module-clauses are supported. An old deprecated one, and a new one that has 
+been modeled after Bigloo.<br>
+
+For the new one see Bigloo. Contrary to Bigloo the file-name and the 
+module-name must be the same (thus avoiding the need for an <tt>'.afile'</tt>).
+This limitation might be changed in future versions. In addition to the Bigloo 
+clauses a <tt>'JS'</tt>
+and <tt>'scheme2js-pragma'</tt>
+clause is supported. The 
+<tt>'JS'</tt>
+clause serves to import JavaScript variables. The 
+<tt>'scheme2js-pragma'</tt>
+to add 
+additional optimization information for exported variables. It 
+is an A-List with the variable-name used as 
+key. Here an example with all recognized optimization-clauses:<br>
+
+Explanatory example:<br>
+
+<pre>
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include "some-file"
+           "another-file")
+  (export (macro macro1)  ;; a (define-macro (macro1 ..) must be in the source
+          (macro macro2)) ;; same here
+  (export (my-fun::bool arg ...) ;; a function returning a bool.
+          my-var)                ;; export simply a variable
+  (scheme2js-pragma       ;; optimization-information for exported variables.
+    (my-fun (JS "myFun")          ;; use "myFun" as JS id for this variable.
+            (call/cc? #t)           ;; this function may invoke call/cc,
+            (call/cc-params (0 2)))) ;;  but only if arg 0 or 2 invoke call/cc.
+  (JS "some_JS_var"))       ;; import 'some_JS_var' as 'some_JS_var'
+  (JS scheme-var)           ;; import mangled form of 'scheme-var' as 'scheme-var'
+  (JS (scm-var "jsVar")     ;; import 'jsVar' as 'scm-var'
+      (scm-var2 jsVar2)))   ;; imort  'jsVar2' as 'scm-var2' (no mangling)
+</pre>
+Here is an example for the old deprecated module-form:<br>
+
+<pre>
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include "some-file"
+           "another-file")
+  (export-macros           ;; export (and use in module) macros.
+          (define-macro (macro-name ...) (...))) ;; same syntax as if in module-body.
+  (export (my-fun?
+            (JS js-id)        ;; the JS-id
+            (type bool)    ;; declare (return-)type of variable/function.
+            (constant? #t) ;; must not be changed from the outside
+            (call/cc? #t)  ;; may invoke call/cc
+            (call/cc-params (0 2))) ;; but only if arg 0 or 2 invoke call/cc.
+          my-var           ;; just export the variable without any additional information.
+          my-fun2)         ;; works for functions too.
+  (JS                      ;; import from JavaScript (same syntax as 'export')
+      (time-out-set! (JS setTimeout)) ;; import setTimeout as time-out-set!
+      window))                        ;; import window as window
+</pre>
+The module-name must be equal to the filename (minus path and extension).<br>
+
+When exporting variables, only the variable-name is needed. The 
+<tt>'JS'</tt>
+entry allows to export functions to JavaScript 
+under a different name, and the remaining entries help <tt>scheme2js</tt>
+to optimize the 
+program.<br>
+
+When module <tt>'foo'</tt>
+is imported, then a file foo.scm or 
+foo.sch is searched in the include-directories (given with 
+<b>-I</b>
+).<br>
+
+Modules without any top-level (but with a module-clause) can be used to 
+declare JavaScript functions and make them accessible to Scheme modules. 
+<h2><a name="section_12">Infotrons</a></h2>
+
+Infotrons are modules for JDA (<a href ="http://foundry.maya.com/jda/"><tt>http://foundry.maya.com/jda/</tt></a>).
+When activated with <tt>'--infotron'</tt>
+<tt>scheme2js</tt>
+recognizes modules starting 
+with an <tt>'infotron'</tt>
+clause as infotrons and compiles them accordingly. 
+Main changes to plain modules are:<br>
+
+- infotrons start with <tt>'infotron'</tt>
+instead of <tt>'module'</tt>,<br>
+
+- they must not export any variables or macros<br>
+
+- they can declare <tt>'uuid'</tt>-clauses
+(or the more convenient 
+<tt>'uuid-seed'</tt>
+string which is then used to construct a uuid),<br>
+
+- they can declare <tt>'properties'</tt>
+that are accepted during the initial 
+configuration.<br>
+
+- they can define the name for the initial configuration in the 
+<tt>'config-name'</tt>
+clause. By default <tt>'config'</tt>
+is used. and<br>
+
+- they can declare the inputs (<tt>'iterms'</tt>)
+and outputs (<tt>'oterms'</tt>)<br>
+
+- top-level must have defines at top.<br>
+
+Example:<br>
+
+<pre>
+(infotron jsAlert
+	  (uuid-seed "jsAlert - Florian Loitsch - Inria")
+	  (iterms (trigger_in on_trigger 10))
+	  (oterms close_event_out)
+	  (properties message))
+
+(define (on_trigger msg)
+   (alert config.message)
+   (close_event_out msg))
+</pre>
+<h2><a name="section_13">See Also</a></h2>
+
+Hop (<a href ="http://hop.inria.fr"><tt>http://hop.inria.fr</tt></a>)<br>
+
+JDA (<a href ="http://foundry.maya.com/jda/"><tt>http://foundry.maya.com/jda/</tt></a>)<br>
+
+R5RS (<a href ="http://www.schemers.org/Documents/Standards/R5RS/"><tt>http://www.schemers.org/Documents/Standards/R5RS/</tt></a>)
+<h2><a name="section_14">Bugs</a></h2>
+
+Due to limitations in JavaScript, there are no integers (exact numbers).<br>
+
+At the moment <tt>scheme2js</tt>
+does not support hygienic macros.<br>
+
+The <tt>'eval'</tt>
+function is still missing, too.<br>
+
+<p>
+<h2><a name="section_15">Author</a></h2>
+
+Florian Loitsch<br>
+
+Email: <a href ="mailto:florian.loitsch@sophia.inria.fr"><tt>florian.loitsch@sophia.inria.fr</tt></a>
+<h2><a name="section_16">Version</a></h2>
+
+Version: 20110717 
+</body>
+</html>
+<!-- NOTE: This file is generated, DO NOT EDIT. -->

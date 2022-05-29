@@ -1,0 +1,161 @@
+-include ../../etc/Makefile.scheme2jsconfig
+
+RUNTIME_FILES = $(SCHEME2JS_RUNTIME)/runtime.js $(SCHEME2JS_RUNTIME)/runtime_callcc.js
+RUNTIME_EXPORTER_FLAGS = --ignored-prefixes '("sc_" "sci_")'
+RUNTIME_INTERFACE_FLAGS = --interface-prefix "sci_" --ignored-prefixes '("sc_")'
+
+ifdef MUTABLE_STRINGS
+RUNTIME_STRING_MODULES = mutable
+else
+RUNTIME_STRING_MODULES = immutable
+endif
+ifdef CALLCC
+RUNTIME_CALLCC_MODULES = misc_callcc
+else
+RUNTIME_CALLCC_MODULES =
+endif
+
+RUNTIME_POPULATION_JS = misc IO $(RUNTIME_STRING_MODULES)
+RUNTIME_POPULATION_JS_CALLCC = $(RUNTIME_POPULATION_JS) misc_callcc
+RUNTIME_POPULATION_SCM = dsssl
+
+RUNTIME_POPULATION = $(RUNTIME_POPULATION_JS) $(RUNTIME_POPULATION_SCM)
+RUNTIME_POPULATION_CALLCC = $(RUNTIME_POPULATION_JS_CALLCC) $(RUNTIME_POPULATION_SCM)
+
+RUNTIME_SOURCES = $(RUNTIME_POPULATION_JS:%=$(SCHEME2JS_RUNTIME)/%.js) \
+                  $(RUNTIME_POPULATION_SCM:%=$(SCHEME2JS_RUNTIME)/%.scm)
+RUNTIME_SOURCES_CALLCC = $(RUNTIME_POPULATION_JS_CALLCC:%=$(SCHEME2JS_RUNTIME)/%.js) \
+                         $(RUNTIME_POPULATION_SCM:%=$(SCHEME2JS_RUNTIME)/%.scm)
+
+RUNTIME_EXPORTS = $(RUNTIME_POPULATION:%=$(SCHEME2JS_RUNTIME)/exports/%.sch)
+RUNTIME_EXPORTS_CALLCC = $(RUNTIME_POPULATION_CALLCC:%=$(SCHEME2JS_RUNTIME)/exports/%.sch)
+
+RUNTIME_JS = $(RUNTIME_POPULATION:%=$(SCHEME2JS_RUNTIME)/%.js)
+RUNTIME_JS_CALLCC = $(RUNTIME_POPULATION_JS_CALLCC:%=$(SCHEME2JS_RUNTIME)/%.js) \
+                    $(RUNTIME_POPULATION_SCM:%=$(SCHEME2JS_RUNTIME)/%_callcc.js)
+
+GENERATED_FILE_DONT_EDIT_JS = @ echo "/************* GENERATED FILE - DO NOT EDIT *************/" > $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo "/************* GENERATED FILE - DO NOT EDIT *************/" >> $@
+GENERATED_FILE_DONT_EDIT_SCM = @ echo ";/************* GENERATED FILE - DO NOT EDIT *************/" > $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@ && \
+			echo ";/************* GENERATED FILE - DO NOT EDIT *************/" >> $@
+
+runtime-build: $(SCHEME2JS_RUNTIME)/runtime.js $(SCHEME2JS_RUNTIME)/runtime_callcc.js \
+		$(SCHEME2JS_RUNTIME)/runtime_interface.js $(SCHEME2JS_RUNTIME)/runtime_interface_callcc.js \
+		$(SCHEME2JS_RUNTIME)/exports/runtime.sch $(SCHEME2JS_RUNTIME)/exports/runtime_callcc.sch \
+		$(SCHEME2JS_RUNTIME)/exports/mod-runtime.sch $(SCHEME2JS_RUNTIME)/exports/mod-runtime_callcc.sch \
+
+#==============================================================================
+#  runtime.js
+#==============================================================================
+$(SCHEME2JS_RUNTIME)/runtime.js: $(RUNTIME_JS)
+	$(GENERATED_FILE_DONT_EDIT_JS);
+	cat $^ >> $@;
+
+$(SCHEME2JS_RUNTIME)/runtime_callcc.js: $(RUNTIME_JS_CALLCC)
+	$(GENERATED_FILE_DONT_EDIT_JS);
+	cat $^ >> $@;
+
+
+#==============================================================================
+#  scm->js compilation. ($RUNTIME_POPULATION_SCM)
+#
+#  this clause requires the executable to be named "scheme2js" and to be
+#  compiled for the build architecture.
+#  haven't yet found any better solution :(
+#  Note: runtime-modules must be written in Scheme2Js module style.
+#==============================================================================
+SAFE_SUFF ="_"$(basename $(notdir $(subst -,_,$<)))"__"
+
+%.js: %.scm $(BUILDBINDIR)/scheme2js
+	$(BUILDBINDIR)/scheme2js --statics-suffix $(SAFE_SUFF) --compress -o $@ $<
+
+%_callcc.js: %.scm $(BUILDBINDIR)/scheme2js
+	$(BUILDBINDIR)/scheme2js --call/cc --statics-suffix $(SAFE_SUFF) --compress -o $@ $<
+
+$(SCHEME2JS_RUNTIME)/exports/%.sch: $(SCHEME2JS_RUNTIME)/%.js $(SCHEME2JS_RUNTIME)/exporter
+	@ mkdir -p $(SCHEME2JS_RUNTIME)/exports
+	$(SCHEME2JS_RUNTIME)/exporter --scheme2js-modules --constant --module runtime $(RUNTIME_EXPORTER_FLAGS) -o $@ $<
+
+$(SCHEME2JS_RUNTIME)/exports/%.sch: $(SCHEME2JS_RUNTIME)/%.scm $(SCHEME2JS_RUNTIME)/exporter
+	@ mkdir -p $(SCHEME2JS_RUNTIME)/exports
+	$(SCHEME2JS_RUNTIME)/exporter --scheme2js-modules --constant --module runtime $(RUNTIME_EXPORTER_FLAGS) -o $@ $<
+
+#==============================================================================
+#  runtime.sch runtime_callcc.sch mod-runtime.sch mod-runtime_callcc.sch
+#==============================================================================
+$(SCHEME2JS_RUNTIME)/exports/runtime.sch: $(RUNTIME_EXPORTS)
+	$(GENERATED_FILE_DONT_EDIT_SCM);
+	@ echo "; this file is the 'cat' of several modules." >> $@
+	cat $^ > $@
+
+$(SCHEME2JS_RUNTIME)/exports/runtime_callcc.sch: $(RUNTIME_EXPORTS_CALLCC)
+	$(GENERATED_FILE_DONT_EDIT_SCM);
+	@ echo "; this file is the 'cat' of several modules." >> $@
+	cat $^ > $@
+
+$(SCHEME2JS_RUNTIME)/exports/mod-runtime.sch \
+$(SCHEME2JS_RUNTIME)/exports/mod-runtime_callcc.sch: $(SCHEME2JS_RUNTIME)/interface
+
+$(SCHEME2JS_RUNTIME)/exports/mod-runtime.sch: $(SCHEME2JS_RUNTIME)/exports/runtime.sch
+	$(SCHEME2JS_RUNTIME)/interface --exports $(RUNTIME_INTERFACE_FLAGS) -o $@ $<
+
+$(SCHEME2JS_RUNTIME)/exports/mod-runtime_callcc.sch: $(SCHEME2JS_RUNTIME)/exports/runtime_callcc.sch
+	$(SCHEME2JS_RUNTIME)/interface --exports $(RUNTIME_INTERFACE_FLAGS) -o $@ $<
+
+
+#==============================================================================
+#  interface-files
+#==============================================================================
+$(SCHEME2JS_RUNTIME)/runtime_interface.js \
+$(SCHEME2JS_RUNTIME)/runtime_interface_callcc.js: $(SCHEME2JS_RUNTIME)/interface
+
+$(SCHEME2JS_RUNTIME)/runtime_interface.js: $(SCHEME2JS_RUNTIME)/exports/runtime.sch
+	$(SCHEME2JS_RUNTIME)/interface --js $(RUNTIME_INTERFACE_FLAGS) -o $@ $<
+
+$(SCHEME2JS_RUNTIME)/runtime_interface_callcc.js: $(SCHEME2JS_RUNTIME)/exports/runtime_callcc.sch
+	$(SCHEME2JS_RUNTIME)/interface --js $(RUNTIME_INTERFACE_FLAGS) -o $@ $<
+
+
+#==============================================================================
+#  exporter / interface
+#==============================================================================
+
+RUNTIME_EXPORTER_MODULES = exporter meta multi-file-port string
+RUNTIME_EXPORTER_SCMS = $(RUNTIME_EXPORTER_MODULES:%=$(SCHEME2JS_RUNTIME)/util/%.scm)
+
+$(SCHEME2JS_RUNTIME)/exporter: $(RUNTIME_EXPORTER_SCMS)
+	$(BIGLOO) -g -o $@ $^
+
+RUNTIME_INTERFACE_MODULES = interface string
+RUNTIME_INTERFACE_SCMS = $(RUNTIME_INTERFACE_MODULES:%=$(SCHEME2JS_RUNTIME)/util/%.scm)
+$(SCHEME2JS_RUNTIME)/interface: $(RUNTIME_INTERFACE_SCMS)
+	$(BIGLOO) -g -o $@ $^
+
+#==============================================================================
+#  clean
+#==============================================================================
+
+runtime-clean:
+	rm -f $(SCHEME2JS_RUNTIME)/exporter;
+	rm -f $(SCHEME2JS_RUNTIME)/interface;
+	rm -f $(SCHEME2JS_RUNTIME)/*.o;
+	rm -f $(SCHEME2JS_RUNTIME)/util/*.o;
+	rm -f $(SCHEME2JS_RUNTIME)/exports/*;
+	rm -f $(SCHEME2JS_RUNTIME)/runtime.js;
+	rm -f $(SCHEME2JS_RUNTIME)/runtime_callcc.js;
+	rm -f $(SCHEME2JS_RUNTIME)/runtime_interface.js;
+	rm -f $(SCHEME2JS_RUNTIME)/runtime_interface_callcc.js;
+	rm -f $(RUNTIME_POPULATION_SCM:%=$(SCHEME2JS_RUNTIME)/%.js)
+	rm -f $(RUNTIME_POPULATION_SCM:%=$(SCHEME2JS_RUNTIME)/%_callcc.js)

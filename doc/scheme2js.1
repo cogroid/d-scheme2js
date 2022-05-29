@@ -1,0 +1,602 @@
+'\" t
+.\" Manual page created with latex2man on Sun Jul 17 15:54:28 CEST 2011
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "SCHEME2JS" "1" "17 July 2011" "Scheme to JavaScript compiler " "Scheme to JavaScript compiler "
+.SH NAME
+
+scheme2js
+\- compiles Scheme programs to JavaScript 
+.PP
+.SH SYNOPSIS
+
+scheme2js
+[\fB\-h|\-\-help\fP]
+[\fB\-\-version\fP]
+[\fB\-v|\-\-verbose\fP]
+[\fB\-\-js\-dot\-notation\fP]
+[\fB\-\-bigloo\-modules\fP]
+[\fB\-\-compress\fP]
+[\fB\-\-infotron\fP]
+[\fB\-\-encapsulate\-modules\fP]
+[\fB\-\-export\-globals\fP]
+[\fB\-\-allow\-unresolved\fP]
+[\fB\-\-js\-this\fP]
+[\fB\-\-js\-return\fP]
+[\fB\-\-statics\-suffix\fP\fI suffix\fP]
+[\fB\-\-constant\-runtime\fP]
+[\fB\-\-indent\fP\fI width\fP]
+[\fB\-O\fP\fI level\fP]
+[\fB\-\-tailrec\fP]
+[\fB\-\-while\fP]
+[\fB\-\-inlining\fP]
+[\fB\-\-max\-inline\-size\fP\fI size\fP]
+[\fB\-\-rec\-inline\-nb\fP\fI nb\fP]
+[\fB\-\-var\-elimination\fP]
+[\fB\-\-propagation\fP]
+[\fB\-\-constant\-propagation\fP]
+[\fB\-\-bigloo\-runtime\-eval\fP]
+[\fB\-\-correct\-modulo\fP]
+[\fB\-\-optimize\-calls\fP]
+[\fB\-\-optimize\-boolify\fP]
+[\fB\-\-optimize\-consts\fP]
+[\fB\-\-trampoline\fP]
+[\fB\-\-max\-tail\-depth\fP\fI depth\fP]
+[\fB\-\-suspend\-resume\fP]
+[\fB\-\-call/cc\fP]
+[\fB\-g\fP]
+[\fB\-d\fP\fI stage\fP]
+[\fB\-I\fP\fI dir\fP]
+\fB\-o\fP\fI outfile\fP
+\fIinfile\fP
+.SH DESCRIPTION
+
+scheme2js
+takes \fIinfile\fP
+and writes to \fIoutfile\fP\&.
+If 
+\fIin\fP/\fIoutfile\fP
+is \&'\-\&'
+stdin/out is used. The input must be a 
+Scheme file. scheme2js
+translates the program into JavaScript. 
+.SH OPTIONS
+
+All boolean options can be prefixed with \&'no\-\&',
+to deactivate them. For 
+example \&'\-\-no\-js\-dot\-notation\&'
+would disable JavaScript\&'s dot\-notation.
+.br
+Options are evaluated in order. If conflicting options are given, the last 
+entry wins. This allows to use \fB\-O\fP
+and then to adjust the values subsequently. 
+.SS IO
+.PP
+.TP
+\fB\-o\fP\fI outfile\fP
+ Write output into \fIoutfile\fP\&.
+If \fIoutfile\fP
+equals "\-" 
+then the result will be printed to stdout. 
+.TP
+\fB\-I\fP\fI dir\fP
+ Add \fIdir\fP
+to Include\-path. This path will be searched for 
+imported modules. 
+.TP
+\fIinfile\fP
+ The Scheme Input\-file. 
+.TP
+\fB\-\-compress\fP
+ Compress the generated output. Nearly all unnecessary 
+spaces are removed. 
+.PP
+.SS INFORMATION
+.PP
+.TP
+\fB\-h|\-\-help\fP
+ Prints a help\-message. 
+.TP
+\fB\-\-version\fP
+ Prints the version of scheme2js\&.
+.TP
+\fB\-v|\-\-verbose\fP
+ Activate verbose output. 
+.PP
+.SS JAVASCRIPT INTERFACE
+.PP
+.TP
+\fB\-\-js\-dot\-notation\fP
+ Allow JavaScript dot\-notation in 
+source\-file. This allows access to object\-properties like o.x\&. 
+.TP
+\fB\-\-infotron\fP
+ Activates support for Infotrons. See Section Infotron 
+for more details. 
+.TP
+\fB\-\-bigloo\-modules\fP
+ Uses Bigloo style module declarations (see 
+the Modules section below). 
+.TP
+\fB\-\-encapsulate\-modules\fP
+ Wrap the module (the compiled file) into an 
+anonymous function. Global variables that are not exported (for instance 
+top\-level \&'let\&'\-variables)
+thus do not pollute the JavaScript 
+top\-level. 
+.TP
+\fB\-\-export\-globals\fP
+ Export all global variables. Variables 
+introduced by global \&'let\&'s
+are not affected by this flag. By default 
+all global variables of files without \&'module\&'\-clause are exported. Files with 
+\&'module\&'\-clause do only export variables declared in the module\-clause. 
+.TP
+\fB\-\-allow\-unresolved\fP
+ Variables that are unresolved are supposed to 
+be JavaScript variables or exported variables from other modules. By default 
+files without \&'module\&'\-clause allow unresolved. Files with a \&'module\&'\-clause 
+yield error\-messages on unknown variables. 
+.TP
+\fB\-\-js\-this\fP
+ Allow the access of JavaScript\&'s \&'this\&'
+inside 
+Scheme procedures. 
+.TP
+\fB\-\-js\-return\fP
+ Introduces a special form: \&'return\&',
+which has 
+the same semantics as JavaScript\&'s \&'return\&'\&.
+.TP
+\fB\-\-constant\-runtime\fP
+ Assume runtime is constant. Disallows 
+assignments to runtime\-functions. When enabled the interface files 
+runtime_interface.js
+and 
+runtime_interface_callcc.js
+are not needed anymore. 
+.TP
+\fB\-\-statics\-suffix\fP\fI suffix\fP
+ Sets the suffix for 
+static variables. Static variables are global variables that are not 
+exported. This avoids name\-clashes with non\-exported variables of different 
+modules. If a module is encapsulated, then this flag has no effect. By default 
+\&'_\&' followed by the file\-name without extension is used (which is the same as 
+the module\&'s name). 
+.TP
+\fB\-\-indent\fP\fI width\fP
+ Sets the indentation width for the 
+produced code. 
+.PP
+.SS OPTIMIZATIONS
+.PP
+.TP
+\fB\-\-tailrec\fP
+ Transform (obvious) tail\-recursive loops into 
+\&'while\&'\-loops.
+.TP
+\fB\-\-while\fP
+ Searches for common loop\-pattern. Improves the generated 
+\&'while\&'\-loops.
+.TP
+\fB\-\-inlining\fP
+ Inlines (small) functions, and functions, that are only 
+used once (\-> no code size increase). 
+.TP
+\fB\-\-max\-inline\-size\fP\fI size\fP
+ Only inline functions smaller 
+than \fIsize\fP\&.
+The calculated size is a rough estimate of the final 
+code\-size. Small functions have a size of about 30. 
+.TP
+\fB\-\-rec\-inline\-nb\fP\fI nb\fP
+ Inline at most \fInb\fP
+nested 
+functions. That is, if a function has been inlined, continue inlining inside 
+the inlined function\&'s body, but only \fInb\fP
+times. A value of 1 forbits 
+inlining inside the body of an inlined function. Functions that are only called 
+at one location are exempted from this limitation. 
+.TP
+\fB\-\-var\-elimination\fP
+ Reduce the number of variables, by substituting 
+variables. \&'(let ((x expr)) (let ((y x)) ....))\&'
+becomes 
+\&'(let ((y expr)) ...)\&'\&.
+.TP
+\fB\-\-propagation\fP
+ Enables constant\-propagation. Whenever possible 
+var\-references are propagated too: if variable \&'x\&'
+has the same value as 
+\&'y\&'
+the references to \&'x\&'
+are replaced by a reference to 
+\&'y\&'\&.
+.TP
+\fB\-\-constant\-propagation\fP
+ Propagates constant variables. Suppose 
+\&'x\&'
+is initialized with a constant value \&'c\&'\&.
+Then all references 
+to \&'x\&'
+are replaced by \&'c\&'
+.TP
+\fB\-\-bigloo\-runtime\-eval\fP
+ Use a Bigloo \&'eval\&' during compilation when 
+a constant expressions (for instance \&'(+ 2 5)) is encountered. Only a limited 
+\&'safe\&' subset of runtime\-functions are evaluated this way. However the result 
+might not be the same as if evaluated at runtime. For example (/ 5 2) would 
+yield 2 when evaluated by Bigloo, but yields 2.5 when evaluated at runtime. 
+.TP
+\fB\-\-correct\-modulo\fP
+ The semantics of Scheme\&'s and JavaScript\&'s modulo 
+differ. With this flag the more expensive R5RS modulo is simulated in 
+JavaScript. Only of relevance when \fB\-\-optimize\-calls\fP
+is activated. 
+.TP
+\fB\-\-optimize\-calls\fP
+ Peephole optimization of small 
+runtime\-functions. Runtime functions like \&'+\&',
+\&'null?\&',
+etc. are 
+directly inlined with their JavaScript equivalent and do not invoke any 
+function\-call. 
+.TP
+\fB\-\-optimize\-boolify\fP
+ During boolification do not test against 
+\&'false\&'
+if the expression is known to be of type bool. 
+.TP
+\fB\-\-optimize\-consts\fP
+ Store explicit constants (like lists and 
+vectors) in global variables, so they are not recreated. 
+.TP
+\fB\-O\fP\fI level\fP
+ Sets the optimization level (default is 
+\fB\-O \fP\fI 1\fP).
+.br
+Each optimization level enables/disables several flags at once: 
+.RS
+.TP
+\-O0 
+\fB\-\-no\-tailrec\fP
+\fB\-\-no\-inlining\fP
+\fB\-\-no\-inline\-runtime\fP
+\fB\-\-no\-constant\-runtime\fP
+\fB\-\-no\-propagation\fP
+\fB\-\-no\-constant\-propagation\fP
+\fB\-\-no\-while\fP
+\fB\-\-correct\-modulo\fP
+\fB\-\-no\-optimize\-calls\fP
+\fB\-\-no\-optimize\-boolify\fP
+\fB\-\-no\-optimize\-set!\fP
+\fB\-\-max\-tail\-depth\fP\fI 40\fP
+\fB\-\-no\-var\-elimination\fP
+\fB\-\-no\-optimize\-consts\fP
+\fB\-\-no\-bigloo\-runtime\-eval\fP
+.TP
+\-O1 
+\fB\-\-tailrec\fP
+\fB\-\-inlining\fP
+\fB\-\-max\-rec\-inline\fP\fI 3\fP
+\fB\-\-max\-inline\-size\fP\fI 30\fP
+\fB\-\-inline\-runtime\fP
+\fB\-\-constant\-runtime\fP
+\fB\-\-propagation\fP
+\fB\-\-constant\-propagation\fP
+\fB\-\-while\fP
+\fB\-\-no\-correct\-modulo\fP
+\fB\-\-optimize\-calls\fP
+\fB\-\-optimize\-boolify\fP
+\fB\-\-optimize\-set!\fP
+\fB\-\-max\-tail\-depth\fP\fI 40\fP
+\fB\-\-var\-elimination\fP
+\fB\-\-optimize\-consts\fP
+\fB\-\-no\-bigloo\-runtime\-eval\fP
+.TP
+\-O2 
+\fB\-\-tailrec\fP
+\fB\-\-inlining\fP
+\fB\-\-max\-rec\-inline\fP\fI 1\fP
+\fB\-\-max\-inline\-size\fP\fI 15\fP
+\fB\-\-no\-inline\-runtime\fP
+\fB\-\-constant\-runtime\fP
+\fB\-\-propagation\fP
+\fB\-\-constant\-propagation\fP
+\fB\-\-while\fP
+\fB\-\-no\-correct\-modulo\fP
+\fB\-\-optimize\-calls\fP
+\fB\-\-optimize\-boolify\fP
+\fB\-\-optimize\-set!\fP
+\fB\-\-max\-tail\-depth\fP\fI 40\fP
+\fB\-\-var\-elimination\fP
+\fB\-\-optimize\-consts\fP
+\fB\-\-bigloo\-runtime\-eval\fP
+.TP
+\-O3 
+\fB\-\-tailrec\fP
+\fB\-\-inlining\fP
+\fB\-\-max\-rec\-inline\fP\fI 4\fP
+\fB\-\-max\-inline\-size\fP\fI 45\fP
+\fB\-\-inline\-runtime\fP
+\fB\-\-constant\-runtime\fP
+\fB\-\-propagation\fP
+\fB\-\-constant\-propagation\fP
+\fB\-\-while\fP
+\fB\-\-no\-correct\-modulo\fP
+\fB\-\-optimize\-calls\fP
+\fB\-\-optimize\-boolify\fP
+\fB\-\-optimize\-set!\fP
+\fB\-\-max\-tail\-depth\fP\fI 40\fP
+\fB\-\-var\-elimination\fP
+\fB\-\-optimize\-consts\fP
+.TP
+\-Obench 
+\fB\-\-tailrec\fP
+\fB\-\-inlining\fP
+\fB\-\-max\-rec\-inline\fP\fI 4\fP
+\fB\-\-max\-inline\-size\fP\fI 45\fP
+\fB\-\-inline\-runtime\fP
+\fB\-\-constant\-runtime\fP
+\fB\-\-propagation\fP
+\fB\-\-constant\-propagation\fP
+\fB\-\-while\fP
+\fB\-\-no\-correct\-modulo\fP
+\fB\-\-optimize\-calls\fP
+\fB\-\-optimize\-boolify\fP
+\fB\-\-optimize\-set!\fP
+\fB\-\-max\-tail\-depth\fP\fI 40\fP
+\fB\-\-var\-elimination\fP
+\fB\-\-optimize\-consts\fP
+\fB\-\-bigloo\-runtime\-eval\fP
+.RE
+.RS
+.PP
+.RE
+.PP
+.SS TRAMPOLINES AND CALL/CC
+.PP
+.RE
+.TP
+\fB\-\-trampoline\fP
+ Enables trampolines. The given implementation does 
+not provide naive trampolines, but a more efficient version that only 
+returns trampolines after a constant number of tail\-calls. 
+.TP
+\fB\-\-max\-tail\-depth\fP\fI depth\fP
+ Sets the maximum depth of 
+consecutive tail\-calls before a trampoline is returned. This option is only 
+relevant when trampolines are enabled. 
+.TP
+\fB\-\-suspend\-resume\fP
+ Enables \&'suspend/resume\&',
+a weaker (but 
+faster) version of \&'call/cc\&'\&.
+A call to \&'suspend\&'
+captures the 
+current continuation. \&'Suspend\&'
+does not return however, and the only 
+way to continue the execution is to invoke the captured continuation. The 
+captured continuation can only be invoked once. This form is useful, when the 
+program needs to pause, and wait for an event. 
+.TP
+\fB\-\-call/cc\fP
+ Enables \&'call/cc\&'\&.
+.TP
+\fB\-\-extern\-invokes\-call/cc\fP
+ Assume imported variables (or unresolved 
+variables) call \&'call/cc\&'
+(even if they do not have a \&'call/cc\&'
+entry in their \&'export\&'\-clause).
+.PP
+.SS DEBUG
+.PP
+.TP
+\fB\-g\fP
+ Adds debugging information. 
+.TP
+\fB\-d\fP\fI stage\fP
+ Depending on \&'stage\&'
+either print 
+the expanded source, or a Scheme\-version of the AST at the chosen compilation 
+stage (into \fIoutfile\fP).
+If you really need this, have a look at the 
+source for valid \&'stage\&'s.
+.PP
+.SH FILES
+
+.PP
+.TP
+share/runtime.js
+ The runtime stripped of 
+\&'call/cc\&'\-related
+procedures. 
+.TP
+share/runtime_interface.js
+ Compiled programs access 
+the runtime through the variables declared in this file. Only needed, when 
+\&'\-\-constant\-runtime\&'
+is not used. 
+.TP
+share/runtime_callcc.js
+ The \&'call/cc\&'
+part of 
+the runtime. If a program is compiled without \&'call/cc\&'
+or 
+\&'suspend/resume\&'
+support, then this file is not needed. 
+.TP
+share/runtime_interface_callcc.js
+ Compiled programs 
+access the \&'call/cc\&'
+runtime through variables declared in this 
+file. Only needed, when the program has been compiled with \&'call/cc\&'
+or 
+\&'suspend/resume\&'
+support and 
+\&'\-\-constant\-runtime\&'
+is not activated. 
+.PP
+.SH MODULES
+
+Bigger programs can be split into modules. In this case the first expression 
+of the input\-file must be a module\-clause. Currently two 
+module\-clauses are supported. An old deprecated one, and a new one that has 
+been modeled after Bigloo.
+.br
+For the new one see Bigloo. Contrary to Bigloo the file\-name and the 
+module\-name must be the same (thus avoiding the need for an \&'\&.afile\&').
+This limitation might be changed in future versions. In addition to the Bigloo 
+clauses a \&'JS\&'
+and \&'scheme2js\-pragma\&'
+clause is supported. The 
+\&'JS\&'
+clause serves to import JavaScript variables. The 
+\&'scheme2js\-pragma\&'
+to add 
+additional optimization information for exported variables. It 
+is an A\-List with the variable\-name used as 
+key. Here an example with all recognized optimization\-clauses:
+.br
+Explanatory example:
+.br
+.Vb
+(module my\-module          ;; filename must be my\-module.scm/sch
+  (import some\-other\-module
+          and\-a\-second\-module)
+  (include "some\-file"
+           "another\-file")
+  (export (macro macro1)  ;; a (define\-macro (macro1 ..) must be in the source
+          (macro macro2)) ;; same here
+  (export (my\-fun::bool arg ...) ;; a function returning a bool.
+          my\-var)                ;; export simply a variable
+  (scheme2js\-pragma       ;; optimization\-information for exported variables.
+    (my\-fun (JS "myFun")          ;; use "myFun" as JS id for this variable.
+            (call/cc? #t)           ;; this function may invoke call/cc,
+            (call/cc\-params (0 2)))) ;;  but only if arg 0 or 2 invoke call/cc.
+  (JS "some_JS_var"))       ;; import 'some_JS_var' as 'some_JS_var'
+  (JS scheme\-var)           ;; import mangled form of 'scheme\-var' as 'scheme\-var'
+  (JS (scm\-var "jsVar")     ;; import 'jsVar' as 'scm\-var'
+      (scm\-var2 jsVar2)))   ;; imort  'jsVar2' as 'scm\-var2' (no mangling)
+.Ve
+Here is an example for the old deprecated module\-form:
+.br
+.Vb
+(module my\-module          ;; filename must be my\-module.scm/sch
+  (import some\-other\-module
+          and\-a\-second\-module)
+  (include "some\-file"
+           "another\-file")
+  (export\-macros           ;; export (and use in module) macros.
+          (define\-macro (macro\-name ...) (...))) ;; same syntax as if in module\-body.
+  (export (my\-fun?
+            (JS js\-id)        ;; the JS\-id
+            (type bool)    ;; declare (return\-)type of variable/function.
+            (constant? #t) ;; must not be changed from the outside
+            (call/cc? #t)  ;; may invoke call/cc
+            (call/cc\-params (0 2))) ;; but only if arg 0 or 2 invoke call/cc.
+          my\-var           ;; just export the variable without any additional information.
+          my\-fun2)         ;; works for functions too.
+  (JS                      ;; import from JavaScript (same syntax as 'export')
+      (time\-out\-set! (JS setTimeout)) ;; import setTimeout as time\-out\-set!
+      window))                        ;; import window as window
+.Ve
+The module\-name must be equal to the filename (minus path and extension).
+.br
+When exporting variables, only the variable\-name is needed. The 
+\&'JS\&'
+entry allows to export functions to JavaScript 
+under a different name, and the remaining entries help scheme2js
+to optimize the 
+program.
+.br
+When module \&'foo\&'
+is imported, then a file foo.scm or 
+foo.sch is searched in the include\-directories (given with 
+\fB\-I\fP
+).
+.br
+Modules without any top\-level (but with a module\-clause) can be used to 
+declare JavaScript functions and make them accessible to Scheme modules. 
+.SH INFOTRONS
+
+Infotrons are modules for JDA (\fBhttp://foundry.maya.com/jda/\fP).
+When activated with \&'\-\-infotron\&'
+scheme2js
+recognizes modules starting 
+with an \&'infotron\&'
+clause as infotrons and compiles them accordingly. 
+Main changes to plain modules are:
+.br
+\- infotrons start with \&'infotron\&'
+instead of \&'module\&',
+.br
+\- they must not export any variables or macros
+.br
+\- they can declare \&'uuid\&'\-clauses
+(or the more convenient 
+\&'uuid\-seed\&'
+string which is then used to construct a uuid),
+.br
+\- they can declare \&'properties\&'
+that are accepted during the initial 
+configuration.
+.br
+\- they can define the name for the initial configuration in the 
+\&'config\-name\&'
+clause. By default \&'config\&'
+is used. and
+.br
+\- they can declare the inputs (\&'iterms\&')
+and outputs (\&'oterms\&')
+.br
+\- top\-level must have defines at top.
+.br
+Example:
+.br
+.Vb
+(infotron jsAlert
+	  (uuid\-seed "jsAlert \- Florian Loitsch \- Inria")
+	  (iterms (trigger_in on_trigger 10))
+	  (oterms close_event_out)
+	  (properties message))
+
+(define (on_trigger msg)
+   (alert config.message)
+   (close_event_out msg))
+.Ve
+.SH SEE ALSO
+
+Hop (\fBhttp://hop.inria.fr\fP)
+.br
+JDA (\fBhttp://foundry.maya.com/jda/\fP)
+.br
+R5RS (\fBhttp://www.schemers.org/Documents/Standards/R5RS/\fP)
+.SH BUGS
+
+Due to limitations in JavaScript, there are no integers (exact numbers).
+.br
+At the moment scheme2js
+does not support hygienic macros.
+.br
+The \&'eval\&'
+function is still missing, too.
+.br
+.PP
+.SH AUTHOR
+
+Florian Loitsch
+.br
+Email: \fBflorian.loitsch@sophia.inria.fr\fP
+.SH VERSION
+
+Version: 20110717 
+.\" NOTE: This file is generated, DO NOT EDIT.

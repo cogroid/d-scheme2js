@@ -1,0 +1,290 @@
+#!/bin/sh
+#*=====================================================================*/
+#*    scheme2js autoconfiguration                                      */
+#*=====================================================================*/
+
+#*---------------------------------------------------------------------*/
+#*    User flags                                                       */
+#*---------------------------------------------------------------------*/
+prefix=/usr/local
+
+bigloo=bigloo
+afile=bglafile
+jfile=bgljfile
+btags=bgltags
+bdepend=bgldepend
+cc=
+install="install -m a+r,u+r"
+backend=native
+
+bcflags="-fsharing -Wall -wslots"
+
+bcflagsdbg="-g -Wall -wslots"
+bcflagsbmem="-g2"
+bcflagsopt="-unsafe -O3"
+
+blflags="-copt \$(CPICFLAGS)"
+
+enable_threads=yes
+
+#*---------------------------------------------------------------------*/
+#*    Private variables                                                */
+#*---------------------------------------------------------------------*/
+version="0.4"
+devel=pre
+
+url="http://www-sop.inria.fr/mimosa/scheme2js/"
+
+bindir=$prefix/bin
+sharedir=$prefix/share/scheme2js
+mandir=$prefix/man/man1
+buildbindir=$PWD/bin
+
+repository=$$HOME/prgm/project/hop/repository
+
+bigloorequired=3.4a
+bigloourl=http://www.inria.fr/mimosa/fp/Bigloo
+
+mutable_strings=
+
+
+# Argument parsing
+while : ; do
+  case $1 in
+    "")
+      break;;
+
+    --prefix=*)
+      prefix="`echo $1 | sed 's/^[^=]*=//'`";
+      bindir=$prefix/bin;
+      sharedir=$prefix/share/scheme2js;
+      mandir=$prefix/man/man1;;
+
+    --bindir=*)
+      bindir="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --sharedir=*)
+      sharedir="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --mandir=*)
+      mandir="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --bigloo=*)
+      bigloo="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --backend=*)
+      backend="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --cigloo=*)
+      cigloo="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --afile=*)
+      afile="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --btags=*)
+      btags="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --bdepend=*)
+      bdepend="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --cc=*)
+      cc="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    --bcflags=*)
+      bcflags="`echo $1 | sed 's/^[-a-z]*=//'`";;
+
+    --blflags=*)
+      blflags="`echo $1 | sed 's/^[-a-z]*=//'`";;
+
+    --bhflags=*)
+      bhflags="`echo $1 | sed 's/^[-a-z]*=//'`";;
+
+    --brflags=*)
+      brflags="`echo $1 | sed 's/^[-a-z]*=//'`";;
+
+    --ccflags=*)
+      ccflags="`echo $1 | sed 's/^[-a-z]*=//'`";;
+
+    --debug)
+      bcflags="$bcflagsdbg";;
+
+    --bmem)
+      bcflags="$bcflags $bcflagsbmem";;
+
+    --optimize)
+      bcflags="$bcflags $bcflagsopt";;
+
+    --mutable-strings)
+      mutable_strings=true;;
+
+    --immutable-strings)
+      mutable_strings=;;
+
+    --install=*)
+      install="`echo $1 | sed 's/^[^=]*=//'`";;
+
+    -*)
+      echo "*** Configure error, unknown option $1" >&2;
+      echo >&2;
+      echo "Usage: configure [options]" >&2;
+      echo "   --prefix=dir.......... prefix to scheme2js install" >&2;
+      echo "   --bindir=dir.......... alternative scheme2js bin directory" >&2;
+      echo "   --mandir=dir.......... alternative scheme2js man directory" >&2;
+      echo "   --sharedir=dir........ alternative scheme2js share directory" >&2;
+      echo "   --bigloo=comp......... The Bigloo compiler" >&2;
+      echo "   --backend=backend..... The execution platform [native,jvm,dotnet]" >&2;
+      echo "   --cigloo=comp......... The Cigloo compiler" >&2;
+      echo "   --afile=afile......... The Bigloo afile tool" >&2;
+      echo "   --btags=btags......... The Bigloo btags tool" >&2;
+      echo "   --bdepend=bdepend..... The Bigloo dependence tool" >&2;
+      echo "   --ccs=cc.............. The C compiler" >&2;
+      echo "   --bcflags=args........ The compilation options" >&2;
+      echo "   --blflags=args........ The link options" >&2;
+      echo "   --bhflags=args........ The heap options" >&2;
+      echo "   --brflags=args........ The heap options" >&2;
+      echo "   --ccflags=args........ The heap options" >&2;
+      echo "   --install............. The installer ($install)" >&2;
+      echo "   --debug............... Enables Bigloo debug mode" >&2;
+      echo "   --bmem................ Enables Bigloo bmem mode" >&2;
+      echo "   --optimize............ Enables Bigloo optimization mode (default)" >&2;
+      echo "   --immutable-strings... generated strings are immutable (default)" >&2;
+      echo "   --mutable-strings..... generated strings are mutable" >&2;
+      exit -1;
+  esac
+  shift
+done
+
+#*---------------------------------------------------------------------*/
+#*    First check if bigloo exists and if it is recent enough          */
+#*---------------------------------------------------------------------*/
+if [ ! -f $bigloo ]; then
+   which $bigloo > /dev/null 2> /dev/null
+   if [ "$?" != "0" ]; then
+      echo "*** ERROR:configure:bigloo. Aborting"
+      echo "Can't find bigloo."
+      exit 1;
+   fi
+fi
+
+bglversion=`$bigloo -q -eval "(exit (display *bigloo-version*))"`
+
+$bigloo -q -eval "(exit (if (string>=? *bigloo-version* \"$bigloorequired\") 0 1))"
+
+if [ $? != "0" ]; then
+  echo "*** ERROR:configure:bigloo. Aborting"
+  echo "Your version of Bigloo is too old. Release"
+  echo "   $bigloorequired"
+  echo "or more recent is required. It may be downloaded at:"
+  echo "   $bigloourl"
+  exit 1;
+fi
+
+#*---------------------------------------------------------------------*/
+#*    Check the backend                                                */
+#*---------------------------------------------------------------------*/
+case $backend in
+  "native")
+     break;;
+  "jvm")
+     break;;
+  "dotnet")
+     break;;
+  *)
+      echo "*** Configure error, Illegal backend $backend" >&2;
+      echo "see configure --help" >&2;
+      exit -1;
+esac
+
+#*---------------------------------------------------------------------*/
+#*    We are now able to set the correct value for cc since we know    */
+#*    what Bigloo is.                                                  */
+#*---------------------------------------------------------------------*/
+if [ "$cc " = " " ]; then
+  cc=`$bigloo -eval '(begin (print *cc*) (exit 0))'`
+fi
+
+bigloolibdir=`$bigloo -q -eval "(begin (print *default-lib-dir*) (exit 0))"`
+if [ "$ccflags " = " " ]; then
+  ccflags=`grep '^CFLAGS=' $bigloolibdir/Makefile.config | sed 's/^[A-Z]*=//'`
+  ccflags="$ccflags -I $bigloolibdir"
+fi
+
+#*---------------------------------------------------------------------*/
+#*    Jvm zip libs                                                     */
+#*---------------------------------------------------------------------*/
+jvmziplibs=
+jvminits=
+
+#pth
+elib="$bigloolibdir/bigloopthread"_e-$bglversion.zip;
+slib="$bigloolibdir/bigloopthread"_s-$bglversion.zip;
+jvmziplibs="$elib $slib $jvmziplibs";
+jvminits="$bigloolibdir/pthread.init $jvminits";
+
+slib="$bigloolibdir/bigloo_s.zip";
+jvmziplibs="$slib $jvmziplibs";
+jvminits="$bigloolibdir/pthread.init $jvminits";
+
+
+# Makefile.scheme2jsconfig
+mkmf=etc/Makefile.scheme2jsconfig
+
+rm -f $mkmf 2> /dev/null
+echo "#* Automatically generated file (don't edit) */" > $mkmf
+
+thread_flags=
+if [ "$enable_threads " = "yes " ]; then
+    thread_flags="-srfi enable-threads"
+fi
+
+cat $mkmf.in \
+    | sed -e "s|@RELEASE@|$version|" \
+          -e "s|@DEVEL@|$devel|" \
+          -e "s|@BIGLOO@|$bigloo|" \
+          -e "s|@BACKEND@|$backend|" \
+          -e "s|@BIGLOOLIBDIR@|$bigloolibdir|" \
+          -e "s|@THREAD_FLAGS@|$thread_flags|" \
+          -e "s|@CIGLOO@|$cigloo|" \
+          -e "s|@AFILE@|$afile|" \
+          -e "s|@JFILE@|$jfile|" \
+          -e "s|@BTAGS@|$btags|" \
+          -e "s|@BDEPEND@|$bdepend|" \
+          -e "s|@CC@|$cc|" \
+          -e "s|@BCFLAGS@|$bcflags|" \
+          -e "s|@BLFLAGS@|$blflags|" \
+          -e "s|@JVMZIPLIBS@|$jvmziplibs|" \
+          -e "s|@JVMINITS@|$jvminits|" \
+          -e "s|@CCFLAGS@|$ccflags|" \
+          -e "s|@SHAREDIR@|$sharedir|" \
+          -e "s|@BUILDETCDIR@|$PWD/etc|" \
+          -e "s|@BUILDBINDIR@|$PWD/bin|" \
+          -e "s|@BINDIR@|$bindir|" \
+          -e "s|@MANDIR@|$mandir|" \
+          -e "s|@MUTABLE_STRINGS@|$mutable_strings|" \
+          -e "s|@INSTALL@|$install|" \
+    >> $mkmf
+
+echo "(module mutable-strings (export (use-mutable-strings?)))" > compiler/mutable-strings.scm
+if [ $mutable_strings ]; then
+  echo "(define (use-mutable-strings?) #t)" >> compiler/mutable-strings.scm;
+else
+  echo "(define (use-mutable-strings?) #f)" >> compiler/mutable-strings.scm;
+fi
+
+#*---------------------------------------------------------------------*/
+#*    Summary                                                          */
+#*---------------------------------------------------------------------*/
+echo "** Configuration summary **"
+echo 
+echo "Release features:"
+echo "  scheme2js release number.............. $version"
+echo "  Bigloo................................ $bigloo"
+echo "  Backend............................... $backend"
+echo "  Bigloo compilation flags.............. $bcflags"
+echo "  Strings..............................." `if [ $mutable_strings ]; then echo "mutable"; else echo "immutable"; fi`
+echo
+echo "Directories where scheme2js will be installed:"
+echo "  binaries.............................. $bindir"
+echo "  man directory......................... $mandir"
+echo "  share directory....................... $sharedir"
+echo 

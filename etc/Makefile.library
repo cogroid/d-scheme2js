@@ -1,0 +1,86 @@
+.PHONY: native-exec jvm-exec exec native-exec-install jvm-exec-install \
+        native-exec-uninstall jvm-exec-uninstall
+.PRECIOUS: %/.empty
+
+%/.empty:
+	mkdir -p $* && touch $@
+
+#*---------------------------------------------------------------------*/
+#*    The implicit rules                                               */
+#*---------------------------------------------------------------------*/
+o/%.o: %.scm o/.empty
+	@ $(call compile2,BIGLOO,BCFLAGS,BLFLAGS,$< -o $@ -c)
+
+$(CLASS_DIR)/%.class: %.scm $(CLASS_DIR)/.empty
+	@ $(call compile,BIGLOO,BJVMFLAGS,$< -o $@ -c)
+
+$(DOTNET_OBJ_DIR)/%.obj: %.scm $(DOTNET_OBJ_DIR)/.empty
+	@ $(call compile,BIGLOO,BDOTNETFLAGS,$< -o $@ -c)
+
+.PHONY:  native-exec jvm-exec dotnet-exec
+
+exec: $(BACKEND)-exec
+
+native-exec: $(BUILDBINDIR)/$(EXEC)
+jvm-exec: $(BUILDBINDIR)/$(EXEC).jar
+
+install: $(BACKEND)-exec-install
+uninstall: $(BACKEND)-exec-uninstall
+
+native-exec-install: $(BUILDBINDIR)/$(EXEC)
+	mkdir -p $(DESTDIR)$(SCHEME2JSBINDIR) && \
+	$(INSTALL) $< $(DESTDIR)$(SCHEME2JSBINDIR) && \
+	chmod $(BMASK) $(DESTDIR)$(SCHEME2JSBINDIR)/$(EXEC)
+
+native-exe-uninstall:
+	/bin/rm -f $(DESTDIR)$(SCHEME2JSBINDIR)/$(EXEC)
+
+jvm-exec-install: $(BUILDBINDIR)/$(EXEC).jar
+	mkdir -p $(DESTDIR)$(SCHEME2JSBINDIR) && \
+	install $< $(DESTDIR)$(SCHEME2JSBINDIR)
+
+jvm-exec-uninstall:
+	/bin/rm -f $(DESTDIR)$(SCHEME2JSBINDIR)/$(EXEC).jar
+
+
+#*---------------------------------------------------------------------*/
+#*    JVM-stuff                                                        */
+#*---------------------------------------------------------------------*/
+META-INF/MANIFEST.MF:
+	mkdir -p META-INF
+	echo "Manifest-Version: 1.0" > $@
+	echo "Main-Class:" $(PBASE).main >> $@
+	echo "Created-By:" $(TARGETNAME) >> $@
+
+jvm-stdlibs: $(CLASSES_CONTAINER)/lib/$(TARGETNAME)/.empty
+	for p in $(JVMZIPLIBS); do \
+          if [ -f $$p ]; then \
+             $(UNZIP) -d $(CLASSES_CONTAINER) -o -u $$p; \
+          else \
+             echo "Warning: Can't find zip file $$p..."; \
+          fi; \
+        done
+	for p in $(JVMINITS); do \
+          if [ -f $$p ]; then \
+	     cp $$p $(CLASSES_CONTAINER)/lib/$(TARGETNAME)/; \
+          else \
+             echo "Warning: Can't find init file $$p..."; \
+          fi; \
+        done
+
+jvm-share:
+	mkdir -p $(CLASS_DIR)/share
+	cp -r runtime/*.js $(CLASS_DIR)/share
+
+#*---------------------------------------------------------------------*/
+#*    Executables                                                      */
+#*---------------------------------------------------------------------*/
+
+$(BUILDBINDIR)/$(EXEC): .afile .etags $(OBJECTS)
+	@ $(call compile,BIGLOO,BCFLAGS,-o $@ $^)
+	@ $(call done,$(COLOR),"Binary ",$@,"...done.")
+
+$(BUILDBINDIR)/$(EXEC).jar: .afile .etags .jfile $(BGL_CLASSES) META-INF/MANIFEST.MF jvm-stdlibs jvm-share
+	@ jar cfm $@ META-INF/MANIFEST.MF -C $(CLASSES_CONTAINER) .
+	@ $(call done,$(COLOR),"Binary ",$@,"...done.")
+

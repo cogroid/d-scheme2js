@@ -1,0 +1,4 @@
+14c14
+< string-copy: ok
+---
+> string-copy: ERROR: GOT ("abcde" #t) but expected: ("abcde" #f)

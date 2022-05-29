@@ -1,0 +1,41 @@
+#*---------------------------------------------------------------------*/
+#*    Standard Bigloo configuration                                    */
+#*---------------------------------------------------------------------*/
+-include ../etc/Makefile.scheme2jsconfig
+-include $(BIGLOOLIBDIR)/Makefile.config
+
+CLASSES_CONTAINER = classes
+PBASE = indes.inria.$(TARGETNAME)
+CLASS_DIR = classes/indes/inria/$(TARGETNAME)
+
+UNZIP = unzip
+
+install: runtime-install
+
+uninstall: runtime-uninstall
+
+clean:
+	$(RM) -rf o;
+	$(RM) -rf $(CLASSES_CONTAINER);
+	$(RM) -rf META-INF;
+	$(RM) -f .afile;
+	$(RM) -f .jfile;
+
+#*---------------------------------------------------------------------*/
+#*    Suffixes                                                         */
+#*---------------------------------------------------------------------*/
+.SUFFIXES:
+.SUFFIXES: .scm .class .java .o .cs .obj
+
+#*---------------------------------------------------------------------*/
+#*    Overwrite dep-rules
+#*---------------------------------------------------------------------*/
+dep: 
+	@(num=`grep -n '^#bdepend start' Makefile | awk -F: '{ print $$1}' -`;\
+          head -n `expr $$num - 1` Makefile > /tmp/Makefile.aux)
+	@ $(DEPEND) -search-path . \
+		    -strict-class-dir $(CLASS_DIR) \
+		    -strict-mco-dir mco \
+                    -strict-obj-dir o \
+                    $(SOURCES) >> /tmp/Makefile.aux
+	@ mv /tmp/Makefile.aux Makefile

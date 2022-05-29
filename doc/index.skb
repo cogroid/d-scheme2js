@@ -1,0 +1,123 @@
+(include "javascript.skr")
+;(skribe-load "web-book.skr")
+
+(define <TITLE> "Scheme2Js")
+(define  <USAGE> "Scheme2Js Usage")
+(define   <FLAGS> "Compilation Flags")
+(define  <JS-INTERFACE> "Scheme - JavaScript")
+
+(define (Scheme2Js) (sc "Scheme2Js"))
+
+(define-markup (JS-prgm #!rest opt #!key file definition (lines #f))
+   (prog :line lines :mark "///"
+      (cond
+	 ((and definition file)
+	  (source :language javascript
+	     :file file
+	     :definition definition))
+	 (file
+	  (source :language javascript :file file))
+	 (else
+	  (source :language javascript (the-body opt))))))
+
+(define-markup (JS-prgm-box #!rest opt #!key file definition (lines #f))
+   (font :size -2
+      (center
+	 (color :bg "#d6ffd6" :width 95.
+	    (JS-prgm :file file :definition definition :lines lines
+		     opt)))))
+
+(define-markup (scheme-prgm #!rest opt #!key file definition
+			    (lines #f))
+   (prog :line lines
+      (cond
+	 ((and definition file)
+	  (source :language bigloo
+	     :file file
+	     :definition definition))
+	 (file
+	  (source :language bigloo :file file))
+	 (else
+	  (source :language bigloo (the-body opt))))))
+
+(define-markup (scheme-prgm-box #!rest opt #!key file definition
+				(lines #f))
+   (font :size -2
+      (center
+	 (color :bg "#d6d6ff" :width 95.
+	    (scheme-prgm :file file :definition definition :lines lines
+			 opt)))))
+
+(define-markup (HTML-prgm #!rest opt #!key file definition
+			  (lines #f))
+   (prog :line lines
+      (cond
+	 ((and definition file)
+	  (source ;:language html
+	     :file file
+	     :definition definition))
+	 (file
+	  (source ;:language html
+		  :file file))
+	 (else
+	  (source ;:language html
+	     (the-body opt))))))
+
+(define-markup (HTML-prgm-box #!rest opt #!key file definition
+			      (lines #f))
+   (font :size -2
+      (center
+	 (color :bg "#dfd6ff" :width 95.
+	    (HTML-prgm :file file :definition definition :lines lines
+		       opt)))))
+
+
+(define (R5RS) (sc [R,(sup (font :size -3 "5"))rs]))
+
+(document :title <TITLE>
+   :author (author
+	      ;:name "Florian Loitsch"
+	      :affiliation "Inria Sophia Antipolis"
+	      :url (ref :url "http://www-sop.inria.fr/indes/scheme2js"))
+
+   (p [,(Scheme2Js) is a Scheme to JavaScript compiler distributed under the
+,(ref :url "http://www.gnu.org/copyleft/gpl.html" :text "GPL") license. While some
+effort has been spent on being as close as possible to ,(R5RS), we concentrated
+mainly on efficiency. Usually ,(Scheme2Js) produces JavaScript code, that is
+comparable to hand-written code. In order to achieve this performance,
+,(Scheme2Js) is not completely ,(R5RS) compliant. In particular it lacks
+exact numbers. ,(Scheme2Js) is not yet complete either: it lacks hygienic macros
+and the ,(tt "eval") procedure.])
+   (p [,(Scheme2Js) has been integrated into
+,(ref :url "http://hop.inria.fr" :text "HOP"),
+another project developed at ,(ref :url "http://www.inria.fr" :text "Inria").
+Future changes on ,(Scheme2Js) will happen inside HOP.])
+   (p [The development of ,(Scheme2Js) has led to several articles:
+,(itemize
+    (item [We submitted ,(ref :url "files/icfp2006.pdf" :text "this paper") to
+,(ref :url "http://www.cs.luc.edu/icfp/" :text "ICFP 2006"). It wasn't accepted,
+but might still be an interesting read.])
+    (item [The compiler and especially its trampoline implementation has been
+	       presented at
+,(ref :url "http://cs.shu.edu/tfp2007/" :text "TFP 2007"). The
+,(ref :url "files/tfp2007.pdf" :text "paper") has been published in the
+,(ref :url "http://www.intellectbooks.co.uk/ppbooks.php?isbn=9781841501963"
+    :text "Trends in Functional Programming, Volume 8") book.])
+    (item [In 2007 a ,(ref :url "files/schemews2007.pdf" :text "paper") on
+,(Scheme2Js)'s ,(code "call/cc") implementation has been presented
+at the ,(ref :url "http://sfp2007.ift.ulaval.ca/" :text "Scheme Workshop") in
+Freiburg.]))])
+   (p [,(Scheme2Js) is now developed as part of
+,(ref :url "http://hop.inria.fr" :text "HOP"). The latest
+stand-alone version of ,(Scheme2Js) is ,(! "!VERSION!"). The source code (needs
+,(ref :url "http://www-sop.inria.fr/indes/fp/Bigloo/" :text "Bigloo") to
+compile) can be
+downloaded ,(ref :url "files/scheme2js-!VERSION!.tar.gz" :text "here"), and a
+precompiled java-version can be found
+,(ref :url "files/scheme2js-!VERSION!.jar" :text "here"). Older versions are
+available ,(ref :url "files" :text "here").])
+   (p [Thanks go to Jens Axel S,(symbol 'oslash)gaard and Sergey Minaev for their testing and
+	      bug-reports.])
+   (p [,(Scheme2Js)' options are described in its
+,(ref :url "scheme2js-man.html" :text "man-page").])
+)

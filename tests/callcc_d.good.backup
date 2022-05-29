@@ -1,0 +1,9 @@
+Invoke native nat1
+before
+Invoke ulm ulm2
+Invoke native nat2
+before
+Returned from native nat2 with: (exit . #<procedure hash-0>)
+ Invoking all protectors until next native call frame
+YYY
+Returned from native nat1 with: (ok . #unspecified)

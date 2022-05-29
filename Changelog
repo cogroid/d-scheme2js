@@ -1,0 +1,60 @@
+2010 11 14:
+- new versions of Bigloo were incompatible with Scheme2Js (generated .jar file
+  was broken). Adapted Scheme2Js.
+
+2010 08 16:
+- small bug fixes.
+- keywords are now recognized in the runtime reader.
+
+2009 07 17:
+- bug fixes.
+- '-g' flag.
+- better error messages.
+- pretty print.
+- compress flag.
+
+2008 12 19:
+- optimized the compiler. Now much faster and uses less memory.
+- some fixes and cleanups due to Sergey Minaev.
+- man-file did not install into DESTDIR. fixed.
+- changed default 'module' declaration to Bigloo style.
+- support qualified names. (@ ...)
+- many bugfixes.
+
+2008 04 07:
+- unresolved vars are now allowed if no 'module'-clause is given. (in accordance with doc).
+- mostly runtime improvements: any?, any, ..., copy-vector, ... and better string->number
+- reduced size of protobject-hashtables. compilation should take less memory now.
+
+2007 12 20:
+- slightly improved call/cc
+- --statics-suffix does not add "_" automatically anymore
+- produced code should be easier to read
+- mutable/immutable strings are now configured at configuration stage
+- fixes from Sergey Minaev
+- added "JS"-clause to module-header. Allows to import JS variables directly
+- added infotron support (see http://foundry.maya.com/jda/)
+- other bug fixes
+
+2007 09 25:
+- java-version (use --backend=jvm during configure)
+- call/cc
+- module-support
+- man-page
+- slightly better flags (not yet perfect)
+- bug-fixes
+  * map/for-each/filter... are not always expanded anymore
+  * multi-threading fixes
+  * while-optim was broken for some cases
+- better constant/var-ref propagation
+
+2006 07 18:
+- tail-recursion (trampolines)
+- bug-fixes
+- return! option
+
+2006 06 30:
+- bug-fixes
+
+2006 06 12:
+- bug-fixes

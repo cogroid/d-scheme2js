@@ -1,0 +1,13 @@
+Scheme2Js is distributed under the following licenses:
+- GNU LGPL v2.1 or later, see COPYING.LESSER, http://www.gnu.org/licenses/
+- CeCILL v1.1, see COPYING.CeCILL, http://www.cecill.info/licences.en.html
+- CeCILL-C v1, see COPYING.CeCILL-C, http://www.cecill.info/licences.en.html
+
+You can choose whichever license you prefer.
+
+Scheme2Js is free software: you can redistribute it and/or modify
+it under the terms of either license (GNU LPGL v2.1+, CeCILL v1.1, CeCILL-C v1).
+
+Scheme2Js is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.

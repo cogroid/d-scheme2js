@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#!/bin/sh
+
+# $1 output
+# rest input
+
+CLASSPATH=.:$HOME/NOSAVE/playground/rhino/rhino1_7R1/build/classes:$CLASSPATH
+export CLASSPATH;
+
+OPTIM="-g";
+
+OUT_FILE=$1;
+shift;
+IN_FILE=$1;
+
+#java org.mozilla.javascript.tools.jsc/Main $OPTIM -d $PWD -o $OUT_FILE $TMP_FILE
+java org.mozilla.javascript.tools.jsc/Main $OPTIM -d $PWD -o $OUT_FILE $IN_FILE

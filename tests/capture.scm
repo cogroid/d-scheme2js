@@ -1,0 +1,61 @@
+(define-macro (test . L)
+   `(begin
+       (print ',@L)
+       (write ,@L)
+       (print)))
+
+
+ (print "testing capturing in let loops")
+ (define *captured* '())
+  (let loop ((i 0))
+     (if (< i 10)
+ 	(begin
+ 	   (set! *captured* (cons (lambda () i)
+ 				  *captured*))
+ 	   (loop (+ i 1)))))
+  (for-each (lambda (f)
+ 	      (display (f))
+ 	      (display " "))
+ 	   *captured*)
+
+
+ (print "testing capturing in nested let loops")
+ (define *captured2* '())
+ (let loop ((i 0))
+    (if (< i 3)
+        (begin
+ 	  (let loop ((j 0))
+ 	     (if (< j 3)
+ 		 (begin
+ 		    (set! *captured2* (cons (lambda () (+ (* 10 i) j))
+ 					    *captured2*))
+ 		    (loop (+ j 1)))))
+ 	  (loop (+ i 1)))))
+ (for-each (lambda (f)
+ 	     (display (f))
+ 	     (display " "))
+ 	  *captured2*)
+
+(print)
+(print "testing escaping in rec-call")
+(let loop ((i 0)
+	   (j 0)
+	   (k 0))
+   (define (p x)
+      (print i " " j " " k)
+      (+ x 1))
+   (if (< i 3)
+       (loop (p i)
+	     (p j)
+	     (p k))))
+
+(print)
+(print "testing escaping recursive functions")
+(define L '())
+(let loop ((i 0))
+   (if (< i 3)
+       (letrec ((f (lambda () (if (< i 0) (begin (f) i)  i))))
+	  (set! L (cons f L))
+	  (loop (+ i 1)))))
+
+(for-each (lambda (f) (print (f))) L)

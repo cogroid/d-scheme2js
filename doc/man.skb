@@ -1,0 +1,453 @@
+(include "man.skr")
+(include "../compiler/version.sch")
+
+(define-macro (get-optim-levels)
+   (with-input-from-file "../compiler/config.scm"
+      (lambda ()
+	 (let loop ((kept '()))
+	    (let ((expr (read)))
+	       (cond
+		  ((eof-object? expr)
+		   (cons 'begin kept))
+		  ((and (pair? expr)
+			(eq? (car expr) 'define)
+			(symbol? (cadr expr))
+			(memq (cadr expr)
+			      '(*O0* *O1* *O2* *O3* *Obench*)))
+		   (loop (cons expr kept)))
+		  (else
+		   (loop kept))))))))
+(get-optim-levels)
+
+(define *config->flag-alist*
+   '((optimize-tail-rec "tailrec")
+     (bigloo-modules "bigloo-modules")
+     (compress? "compress")
+     (infotron "infotron")
+     (do-inlining "inlining")
+     (inline-runtime "inline-runtime")
+     (runtime-is-constant "constant-runtime")
+     (propagation "propagation")
+     (constant-propagation "constant-propagation")
+     (bigloo-runtime-eval "bigloo-runtime-eval")
+     (while "while")
+     (correct-modulo "correct-modulo")
+     (optimize-calls "optimize-calls")
+     (optimize-boolify "optimize-boolify")
+     (optimize-set! "optimize-set!")
+     (max-tail-depth "max-tail-depth")
+     (var-elimination "var-elimination")
+     (optimize-consts "optimize-consts")
+     (max-inline-size "max-inline-size")
+     (rec-inline-nb "max-rec-inline")
+     (direct-js-object-access "js-this")
+     (allow-unresolved "allow-unresolved")
+     (export-globals "export-globals")
+     (encapsulate-modules "encapsulate-modules")
+     (statics-suffix "statics-suffix")
+     (trampoline "trampoline")
+     (print-locations "print-locations")
+     (return "return")
+     (suspend-resume "suspend/resume")
+     (call/cc "call/cc")
+     (extern-always-call/cc "extern-invokes-call/cc")
+     (include-paths "I")
+     (indent "indent")
+     (debug "g")))
+     
+(define (config->flag-name c)
+   (let ((p (assq c *config->flag-alist*)))
+      (if p
+	  (cadr p)
+	  (error "config->flag"
+		 "forgot config->flag entry"
+		 c))))
+
+(define (optim-flags optim)
+   (map (lambda (c/val)
+	   (let ((c-name (config->flag-name (car c/val)))
+		 (val (cdr c/val)))
+	      (cond
+		 ((eq? val #t)
+		  (opt (string-append "--" c-name)))
+		 ((not val)
+		  (opt (string-append "--no-" c-name)))
+		 (else
+		  (man-option :option (string-append "--" c-name)
+			      :arg (with-output-to-string
+				      (lambda () (display val))))))))
+	(case optim
+	   ((0) *O0*)
+	   ((1) *O1*)
+	   ((2) *O2*)
+	   ((3) *O3*)
+	   ((bench) *Obench*))))
+		      
+   
+(define <SCM2JS> "scheme2js")
+(define (SCM2JS) (man-prog <SCM2JS>))
+(define (oopt o) (list (man-option :option (string-append "?" o)) " "))
+(define (opt o) (list (man-option :option o) " "))
+(define (arg a) (man-option :arg a))
+(define (opt-item . L)
+   (let ((len (length L)))
+      (cond
+	 ((and (> len 2)
+	       (keyword? (car L))
+	       (keyword? (caddr L)))
+	  (apply man-item :desc (apply man-option (take L 4))
+		 (drop L 4)))
+	 ((keyword? (car L))
+	  (apply man-item :desc (apply man-option (take L 2))
+		 (drop L 2)))
+	 (else
+	  (apply man-item :desc (man-option :option (car L))
+		 (cdr L))))))
+       
+(man-doc
+(man-begin :title <SCM2JS>
+	   :author "Florian Loitsch"
+	   :info "Scheme to JavaScript compiler"
+	   :man-chapter 1
+	   :prog <SCM2JS>
+	   :version *version*
+	   
+(man-prog <SCM2JS>) " - compiles Scheme programs to JavaScript")
+
+(man-section :title "Synopsis"
+(SCM2JS) " "
+(oopt "-h|--help")
+(oopt "--version")
+(oopt "-v|--verbose")
+(oopt "--js-dot-notation")
+(oopt "--bigloo-modules")
+(oopt "--compress")
+(oopt "--infotron")
+(oopt "--encapsulate-modules")
+(oopt "--export-globals")
+(oopt "--allow-unresolved")
+(oopt "--js-this")
+(oopt "--js-return")
+(man-option :option "?--statics-suffix" :arg "suffix") " "
+(oopt "--constant-runtime")
+(man-option :option "?--indent" :arg "width") " "
+(man-option :option "?-O" :arg "level") " "
+(oopt "--tailrec")
+(oopt "--while")
+(oopt "--inlining")
+(man-option :option "?--max-inline-size" :arg "size") " "
+(man-option :option "?--rec-inline-nb" :arg "nb") " "
+(oopt "--var-elimination")
+(oopt "--propagation")
+(oopt "--constant-propagation")
+(oopt "--bigloo-runtime-eval")
+(oopt "--correct-modulo")
+(oopt "--optimize-calls")
+(oopt "--optimize-boolify")
+(oopt "--optimize-consts")
+(oopt "--trampoline")
+(man-option :option "?--max-tail-depth" :arg "depth") " "
+(oopt "--suspend-resume")
+(oopt "--call/cc")
+;(oopt "-l|--print-locations")
+(oopt "-g")
+(man-option :option "?-d" :arg "stage") " "
+(man-option :option "?-I" :arg "dir") " "
+(man-option :option "-o" :arg "outfile") " "
+(man-option :arg "infile"))
+
+(man-section :title "Description"
+[,(SCM2JS) takes ,(arg "infile") and writes to ,(arg "outfile"). If
+,(arg "in")/,(arg "outfile") is ,(ttt "-") stdin/out is used. The input must be a
+Scheme file. ,(man-prog <SCM2JS>) translates the program into JavaScript.])
+
+(man-section :title "Options"
+[All boolean options can be prefixed with ,(ttt "no-"), to deactivate them. For
+     example ,(ttt "--no-js-dot-notation") would disable JavaScript's dot-notation.]
+(linebreak)
+[Options are evaluated in order. If conflicting options are given, the last
+entry wins. This allows to use ,(opt "-O") and then to adjust the values subsequently.]
+
+(man-ssection :title "IO"
+(man-desc	      
+ (opt-item :option "-o" :arg "outfile"
+	   [Write output into ,(arg "outfile"). If ,(arg "outfile") equals "-"
+		  then the result will be printed to stdout.])
+ (opt-item :option "-I" :arg "dir"
+	   [Add ,(arg "dir") to Include-path. This path will be searched for
+		imported modules.])
+ (opt-item :arg "infile"
+	   [The Scheme Input-file.])
+ (opt-item "--compress" [Compress the generated output. Nearly all unnecessary
+spaces are removed.])
+ ))
+
+(man-ssection :title "Information"
+(man-desc
+ (opt-item "-h|--help" [Prints a help-message.])
+ (opt-item "--version" [Prints the version of ,(SCM2JS).])
+ (opt-item "-v|--verbose" [Activate verbose output.])))
+
+(man-ssection :title "JavaScript Interface"
+(man-desc
+ (opt-item "--js-dot-notation" [Allow JavaScript dot-notation in
+source-file. This allows access to object-properties like ,(man-verb+ "o.x").])
+ (opt-item "--infotron" [Activates support for Infotrons. See Section Infotron
+				   for more details.])
+ (opt-item "--bigloo-modules" [Uses Bigloo style module declarations (see
+the Modules section below).])
+ (opt-item "--encapsulate-modules" [Wrap the module (the compiled file) into an
+anonymous function. Global variables that are not exported (for instance
+top-level ,(ttt "let")-variables) thus do not pollute the JavaScript
+top-level.])
+ (opt-item "--export-globals" [Export all global variables. Variables
+introduced by global ,(ttt "let")s are not affected by this flag. By default
+all global variables of files without 'module'-clause are exported. Files with
+'module'-clause do only export variables declared in the module-clause.])
+ (opt-item "--allow-unresolved" [Variables that are unresolved are supposed to
+be JavaScript variables or exported variables from other modules. By default
+files without 'module'-clause allow unresolved. Files with a 'module'-clause
+yield error-messages on unknown variables.])
+ (opt-item "--js-this" [Allow the access of JavaScript's ,(ttt "this") inside
+Scheme procedures.])
+ (opt-item "--js-return" [Introduces a special form: ,(ttt "return"), which has
+the same semantics as JavaScript's ,(ttt "return").])
+ (opt-item "--constant-runtime" [Assume runtime is constant. Disallows
+assignments to runtime-functions. When enabled the interface files
+,(man-file "runtime_interface.js") and
+,(man-file "runtime_interface_callcc.js") are not needed anymore.])
+ (opt-item :option "--statics-suffix" :arg "suffix" [Sets the suffix for
+static variables. Static variables are global variables that are not
+exported. This avoids name-clashes with non-exported variables of different
+modules. If a module is encapsulated, then this flag has no effect. By default
+'_' followed by the file-name without extension is used (which is the same as
+the module's name).])
+ (opt-item :option "--indent" :arg "width" [Sets the indentation width for the
+produced code.])
+))
+
+(man-ssection :title "Optimizations"
+(man-desc
+(opt-item "--tailrec" [Transform (obvious) tail-recursive loops into
+,(ttt "while")-loops.])
+(opt-item "--while" [Searches for common loop-pattern. Improves the generated
+			      ,(ttt "while")-loops.])
+(opt-item "--inlining" [Inlines (small) functions, and functions, that are only
+used once (-> no code size increase).])
+(opt-item :option "--max-inline-size" :arg "size" [Only inline functions smaller
+than ,(arg "size"). The calculated size is a rough estimate of the final
+code-size. Small functions have a size of about 30.])
+(opt-item :option "--rec-inline-nb" :arg "nb" [Inline at most ,(arg "nb") nested
+functions. That is, if a function has been inlined, continue inlining inside
+the inlined function's body, but only ,(arg "nb") times. A value of 1 forbits
+inlining inside the body of an inlined function. Functions that are only called
+at one location are exempted from this limitation.])
+(opt-item "--var-elimination" [Reduce the number of variables, by substituting
+variables. ,(ttt "(let ((x expr)) (let ((y x)) ....))") becomes
+,(ttt "(let ((y expr)) ...)").])
+(opt-item "--propagation" [Enables constant-propagation. Whenever possible
+var-references are propagated too: if variable ,(ttt "x") has the same value as
+,(ttt "y") the references to ,(ttt "x") are replaced by a reference to
+,(ttt "y").])
+(opt-item "--constant-propagation" [Propagates constant variables. Suppose
+,(ttt "x") is initialized with a constant value ,(ttt "c"). Then all references
+to ,(ttt "x") are replaced by ,(ttt "c")])
+(opt-item "--bigloo-runtime-eval" [Use a Bigloo 'eval' during compilation when
+a constant expressions (for instance '(+ 2 5)) is encountered. Only a limited
+'safe' subset of runtime-functions are evaluated this way. However the result
+might not be the same as if evaluated at runtime. For example (/ 5 2) would
+yield 2 when evaluated by Bigloo, but yields 2.5 when evaluated at runtime.])
+(opt-item "--correct-modulo" [The semantics of Scheme's and JavaScript's modulo
+differ. With this flag the more expensive R5RS modulo is simulated in
+JavaScript. Only of relevance when ,(opt "--optimize-calls") is activated.])
+(opt-item "--optimize-calls" [Peephole optimization of small
+runtime-functions. Runtime functions like ,(ttt "+"), ,(ttt "null?"), etc. are
+directly inlined with their JavaScript equivalent and do not invoke any
+function-call.])
+(opt-item "--optimize-boolify" [During boolification do not test against
+,(ttt "false") if the expression is known to be of type bool.])
+(opt-item "--optimize-consts" [Store explicit constants (like lists and
+vectors) in global variables, so they are not recreated.])
+(opt-item :option "-O" :arg "level" [Sets the optimization level (default is
+,(man-option :option "-O " :arg "1")).] (linebreak)
+[Each optimization level enables/disables several flags at once:]
+(man-desc
+ (man-item :desc "-O0" (map (lambda (o) (list o " "))
+			    (optim-flags 0)))
+ (man-item :desc "-O1" (map (lambda (o) (list o " "))
+			    (optim-flags 1)))
+ (man-item :desc "-O2" (map (lambda (o) (list o " "))
+			    (optim-flags 2)))
+ (man-item :desc "-O3" (map (lambda (o) (list o " "))
+			    (optim-flags 3)))
+ (man-item :desc "-Obench" (map (lambda (o) (list o " "))
+			    (optim-flags 'bench)))))))
+
+(man-ssection :title "Trampolines and Call/cc"
+(man-desc
+ (opt-item "--trampoline" [Enables trampolines. The given implementation does
+not provide naive trampolines, but a more efficient version that only
+returns trampolines after a constant number of tail-calls.])
+ (opt-item :option "--max-tail-depth" :arg "depth" [Sets the maximum depth of
+consecutive tail-calls before a trampoline is returned. This option is only
+relevant when trampolines are enabled.])
+ (opt-item "--suspend-resume" [Enables ,(ttt "suspend/resume"), a weaker (but
+faster) version of ,(ttt "call/cc"). A call to ,(ttt "suspend") captures the
+current continuation. ,(ttt "Suspend") does not return however, and the only
+way to continue the execution is to invoke the captured continuation. The
+captured continuation can only be invoked once. This form is useful, when the
+program needs to pause, and wait for an event.])
+ (opt-item "--call/cc" [Enables ,(ttt "call/cc").])
+ (opt-item "--extern-invokes-call/cc" [Assume imported variables (or unresolved
+variables) call ,(ttt "call/cc") (even if they do not have a ,(ttt "call/cc")
+entry in their ,(ttt "export")-clause).])))
+
+(man-ssection :title "Debug"
+(man-desc	      
+; (opt-item "-l|--print-locations" [Add code, that indicates the location of the
+;original source-code. The location is then accessible through the variables
+;,(ttt "__sc_FILE") and ,(ttt "__sc_LINE").])
+ (opt-item "-g" [Adds debugging information.])
+ (opt-item :option "-d" :arg "stage" [Depending on ,(ttt "stage") either print
+the expanded source, or a Scheme-version of the AST at the chosen compilation
+stage (into ,(arg "outfile")). If you really need this, have a look at the
+source for valid ,(ttt "stage")s.]))))
+	      
+(man-section :title "Files"
+(man-desc
+ (man-item :desc (man-file "share/runtime.js") [The runtime stripped of
+,(ttt "call/cc")-related procedures.])
+ (man-item :desc (man-file "share/runtime_interface.js") [Compiled programs access
+the runtime through the variables declared in this file. Only needed, when
+,(ttt "--constant-runtime") is not used.])
+ (man-item :desc (man-file "share/runtime_callcc.js") [The ,(ttt "call/cc") part of
+the runtime. If a program is compiled without ,(ttt "call/cc") or
+,(ttt "suspend/resume") support, then this file is not needed.])
+ (man-item :desc (man-file "share/runtime_interface_callcc.js") [Compiled programs
+access the ,(ttt "call/cc") runtime through variables declared in this
+file. Only needed, when the program has been compiled with ,(ttt "call/cc") or
+,(ttt "suspend/resume") support and
+,(ttt "--constant-runtime") is not activated.])))
+
+(man-section :title "Modules"
+[Bigger programs can be split into modules. In this case the first expression
+of the input-file must be a ,(tt "module")-clause. Currently two
+module-clauses are supported. An old deprecated one, and a new one that has
+been modeled after Bigloo.](linebreak)
+[For the new one see Bigloo. Contrary to Bigloo the file-name and the
+module-name must be the same (thus avoiding the need for an ,(ttt ".afile")).
+This limitation might be changed in future versions. In addition to the Bigloo
+clauses a ,(ttt "JS") and ,(ttt "scheme2js-pragma") clause is supported. The
+,(ttt "JS") clause serves to import JavaScript variables. The
+,(ttt "scheme2js-pragma") to add
+additional optimization information for exported variables. It
+is an A-List with the variable-name used as
+key. Here an example with all recognized optimization-clauses:](linebreak)
+[Explanatory example:](linebreak)
+(man-verb "
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include \"some-file\"
+           \"another-file\")
+  (export (macro macro1)  ;; a (define-macro (macro1 ..) must be in the source
+          (macro macro2)) ;; same here
+  (export (my-fun::bool arg ...) ;; a function returning a bool.
+          my-var)                ;; export simply a variable
+  (scheme2js-pragma       ;; optimization-information for exported variables.
+    (my-fun (JS \"myFun\")          ;; use \"myFun\" as JS id for this variable.
+            (call/cc? #t)           ;; this function may invoke call/cc,
+            (call/cc-params (0 2)))) ;;  but only if arg 0 or 2 invoke call/cc.
+  (JS \"some_JS_var\"))       ;; import 'some_JS_var' as 'some_JS_var'
+  (JS scheme-var)           ;; import mangled form of 'scheme-var' as 'scheme-var'
+  (JS (scm-var \"jsVar\")     ;; import 'jsVar' as 'scm-var'
+      (scm-var2 jsVar2)))   ;; imort  'jsVar2' as 'scm-var2' (no mangling)"
+)
+(linebreak)
+
+[Here is an example for the old deprecated module-form:](linebreak)
+(man-verb "
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include \"some-file\"
+           \"another-file\")
+  (export-macros           ;; export (and use in module) macros.
+          (define-macro (macro-name ...) (...))) ;; same syntax as if in module-body.
+  (export (my-fun?
+            (JS js-id)        ;; the JS-id
+            (type bool)    ;; declare (return-)type of variable/function.
+            (constant? #t) ;; must not be changed from the outside
+            (call/cc? #t)  ;; may invoke call/cc
+            (call/cc-params (0 2))) ;; but only if arg 0 or 2 invoke call/cc.
+          my-var           ;; just export the variable without any additional information.
+          my-fun2)         ;; works for functions too.
+  (JS                      ;; import from JavaScript (same syntax as 'export')
+      (time-out-set! (JS setTimeout)) ;; import setTimeout as time-out-set!
+      window))                        ;; import window as window")
+(linebreak)
+[The module-name must be equal to the filename (minus path and extension).]
+(linebreak)
+[When exporting variables, only the variable-name is needed. The
+,(ttt "JS") entry allows to export functions to JavaScript
+under a different name, and the remaining entries help ,(SCM2JS) to optimize the
+program.](linebreak)
+[When module ,(ttt "foo") is imported, then a file ,(tt "foo.scm") or
+,(tt "foo.sch") is searched in the include-directories (given with
+,(opt "-I")).](linebreak)
+[Modules without any top-level (but with a module-clause) can be used to
+declare JavaScript functions and make them accessible to Scheme modules.])
+
+(man-section :title "Infotrons"
+[Infotrons are modules for JDA (,(man-url "http://foundry.maya.com/jda/")).
+When activated with ,(ttt "--infotron") ,(SCM2JS) recognizes modules starting
+with an ,(ttt "infotron") clause as infotrons and compiles them accordingly.
+Main changes to plain modules are:]
+(linebreak)
+[- infotrons start with ,(ttt "infotron") instead of ,(ttt "module"),] (linebreak)
+[- they must not export any variables or macros] (linebreak)
+[- they can declare ,(ttt "uuid")-clauses (or the more convenient
+,(ttt "uuid-seed") string which is then used to construct a uuid),] (linebreak)
+[- they can declare ,(ttt "properties") that are accepted during the initial
+   configuration.] (linebreak)
+[- they can define the name for the initial configuration in the
+,(ttt "config-name") clause. By default ,(ttt "config") is used. and]
+(linebreak)
+[- they can declare the inputs (,(ttt "iterms")) and outputs (,(ttt "oterms"))]
+(linebreak)
+[- top-level must have defines at top.]
+
+(linebreak)
+[Example:](linebreak)
+(man-verb "
+(infotron jsAlert
+	  (uuid-seed \"jsAlert - Florian Loitsch - Inria\")
+	  (iterms (trigger_in on_trigger 10))
+	  (oterms close_event_out)
+	  (properties message))
+
+(define (on_trigger msg)
+   (alert config.message)
+   (close_event_out msg))"))
+
+(man-section :title "See Also"
+	     [Hop (,(man-url "http://hop.inria.fr"))] (linebreak)
+	     [JDA (,(man-url "http://foundry.maya.com/jda/"))] (linebreak)
+	     [R5RS (,(man-url "http://www.schemers.org/Documents/Standards/R5RS/"))]
+	     )
+
+(man-section :title "Bugs"
+[Due to limitations in JavaScript, there are no integers (exact numbers).]
+(linebreak)
+[At the moment ,(SCM2JS) does not support hygienic macros.](linebreak)
+[The ,(ttt "eval") function is still missing, too.] (linebreak))
+
+(man-section :title "Author"
+	     "Florian Loitsch"(linebreak)
+	     "Email: " (man-email "florian.loitsch@sophia.inria.fr")
+	     )
+
+(man-section :title "Version"
+	     "Version: " *version*
+	     )
+)

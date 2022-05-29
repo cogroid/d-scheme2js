@@ -1,0 +1,7 @@
+You need Bigloo3.0b. (or greater)
+Just
+./configure
+make
+make install
+
+see also doc/index.html and doc/scheme2js.1 (the man-page)

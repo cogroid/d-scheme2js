@@ -1,0 +1,30 @@
+28,35c28,35
+< -5.0
+< -4.0
+< -4.0
+< -4.0
+< 3.0
+< 4.0
+< 3.0
+< 4.0
+---
+> -5
+> -4
+> -4
+> -4
+> 3
+> 4
+> 3
+> 4
+39c39
+< 100.0
+---
+> 100
+83c83
+< "BAD BAD (no exception)"
+---
+> "expected exception"
+87c87
+< "BAD BAD (no exception)"
+---
+> "expected exception"

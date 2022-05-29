@@ -1,0 +1,279 @@
+\begin{document}
+\setVersion{20110717}
+\begin{Name}{1}{scheme2js}{Florian Loitsch}{Scheme to JavaScript compiler}{scheme2js}
+\Prog{scheme2js} - compiles Scheme programs to JavaScript
+\end{Name}
+
+\section{Synopsis}
+\Prog{scheme2js} \oOpt{-h|--help} \oOpt{--version} \oOpt{-v|--verbose} \oOpt{--js-dot-notation} \oOpt{--bigloo-modules} \oOpt{--compress} \oOpt{--infotron} \oOpt{--encapsulate-modules} \oOpt{--export-globals} \oOpt{--allow-unresolved} \oOpt{--js-this} \oOpt{--js-return} \oOptArg{--statics-suffix}{ suffix} \oOpt{--constant-runtime} \oOptArg{--indent}{ width} \oOptArg{-O}{ level} \oOpt{--tailrec} \oOpt{--while} \oOpt{--inlining} \oOptArg{--max-inline-size}{ size} \oOptArg{--rec-inline-nb}{ nb} \oOpt{--var-elimination} \oOpt{--propagation} \oOpt{--constant-propagation} \oOpt{--bigloo-runtime-eval} \oOpt{--correct-modulo} \oOpt{--optimize-calls} \oOpt{--optimize-boolify} \oOpt{--optimize-consts} \oOpt{--trampoline} \oOptArg{--max-tail-depth}{ depth} \oOpt{--suspend-resume} \oOpt{--call/cc} \oOpt{-g} \oOptArg{-d}{ stage} \oOptArg{-I}{ dir} \OptArg{-o}{ outfile} \Arg{infile}
+\section{Description}
+\Prog{scheme2js} takes \Arg{infile} and writes to \Arg{outfile}. If
+\Arg{in}/\Arg{outfile} is \texttt{'-'} stdin/out is used. The input must be a
+Scheme file. \Prog{scheme2js} translates the program into JavaScript.
+\section{Options}
+All boolean options can be prefixed with \texttt{'no-'}, to deactivate them. For
+     example \texttt{'--no-js-dot-notation'} would disable JavaScript's dot-notation.\\
+Options are evaluated in order. If conflicting options are given, the last
+entry wins. This allows to use \Opt{-O}  and then to adjust the values subsequently.
+\subsection{IO}
+
+\begin{Description}
+\item[\OptArg{-o}{ outfile}] Write output into \Arg{outfile}. If \Arg{outfile} equals "-"
+		  then the result will be printed to stdout.
+\item[\OptArg{-I}{ dir}] Add \Arg{dir} to Include-path. This path will be searched for
+		imported modules.
+\item[\Arg{infile}] The Scheme Input-file.
+\item[\Opt{--compress}] Compress the generated output. Nearly all unnecessary
+spaces are removed.
+\end{Description}
+\subsection{Information}
+
+\begin{Description}
+\item[\Opt{-h|--help}] Prints a help-message.
+\item[\Opt{--version}] Prints the version of \Prog{scheme2js}.
+\item[\Opt{-v|--verbose}] Activate verbose output.
+\end{Description}
+\subsection{JavaScript Interface}
+
+\begin{Description}
+\item[\Opt{--js-dot-notation}] Allow JavaScript dot-notation in
+source-file. This allows access to object-properties like \verb+o.x+.
+\item[\Opt{--infotron}] Activates support for Infotrons. See Section Infotron
+				   for more details.
+\item[\Opt{--bigloo-modules}] Uses Bigloo style module declarations (see
+the Modules section below).
+\item[\Opt{--encapsulate-modules}] Wrap the module (the compiled file) into an
+anonymous function. Global variables that are not exported (for instance
+top-level \texttt{'let'}-variables) thus do not pollute the JavaScript
+top-level.
+\item[\Opt{--export-globals}] Export all global variables. Variables
+introduced by global \texttt{'let'}s are not affected by this flag. By default
+all global variables of files without 'module'-clause are exported. Files with
+'module'-clause do only export variables declared in the module-clause.
+\item[\Opt{--allow-unresolved}] Variables that are unresolved are supposed to
+be JavaScript variables or exported variables from other modules. By default
+files without 'module'-clause allow unresolved. Files with a 'module'-clause
+yield error-messages on unknown variables.
+\item[\Opt{--js-this}] Allow the access of JavaScript's \texttt{'this'} inside
+Scheme procedures.
+\item[\Opt{--js-return}] Introduces a special form: \texttt{'return'}, which has
+the same semantics as JavaScript's \texttt{'return'}.
+\item[\Opt{--constant-runtime}] Assume runtime is constant. Disallows
+assignments to runtime-functions. When enabled the interface files
+\File{runtime_interface.js} and
+\File{runtime_interface_callcc.js} are not needed anymore.
+\item[\OptArg{--statics-suffix}{ suffix}] Sets the suffix for
+static variables. Static variables are global variables that are not
+exported. This avoids name-clashes with non-exported variables of different
+modules. If a module is encapsulated, then this flag has no effect. By default
+'_' followed by the file-name without extension is used (which is the same as
+the module's name).
+\item[\OptArg{--indent}{ width}] Sets the indentation width for the
+produced code.
+\end{Description}
+\subsection{Optimizations}
+
+\begin{Description}
+\item[\Opt{--tailrec}] Transform (obvious) tail-recursive loops into
+\texttt{'while'}-loops.
+\item[\Opt{--while}] Searches for common loop-pattern. Improves the generated
+			      \texttt{'while'}-loops.
+\item[\Opt{--inlining}] Inlines (small) functions, and functions, that are only
+used once (-> no code size increase).
+\item[\OptArg{--max-inline-size}{ size}] Only inline functions smaller
+than \Arg{size}. The calculated size is a rough estimate of the final
+code-size. Small functions have a size of about 30.
+\item[\OptArg{--rec-inline-nb}{ nb}] Inline at most \Arg{nb} nested
+functions. That is, if a function has been inlined, continue inlining inside
+the inlined function's body, but only \Arg{nb} times. A value of 1 forbits
+inlining inside the body of an inlined function. Functions that are only called
+at one location are exempted from this limitation.
+\item[\Opt{--var-elimination}] Reduce the number of variables, by substituting
+variables. \texttt{'(let ((x expr)) (let ((y x)) ....))'} becomes
+\texttt{'(let ((y expr)) ...)'}.
+\item[\Opt{--propagation}] Enables constant-propagation. Whenever possible
+var-references are propagated too: if variable \texttt{'x'} has the same value as
+\texttt{'y'} the references to \texttt{'x'} are replaced by a reference to
+\texttt{'y'}.
+\item[\Opt{--constant-propagation}] Propagates constant variables. Suppose
+\texttt{'x'} is initialized with a constant value \texttt{'c'}. Then all references
+to \texttt{'x'} are replaced by \texttt{'c'}
+\item[\Opt{--bigloo-runtime-eval}] Use a Bigloo 'eval' during compilation when
+a constant expressions (for instance '(+ 2 5)) is encountered. Only a limited
+'safe' subset of runtime-functions are evaluated this way. However the result
+might not be the same as if evaluated at runtime. For example (/ 5 2) would
+yield 2 when evaluated by Bigloo, but yields 2.5 when evaluated at runtime.
+\item[\Opt{--correct-modulo}] The semantics of Scheme's and JavaScript's modulo
+differ. With this flag the more expensive R5RS modulo is simulated in
+JavaScript. Only of relevance when \Opt{--optimize-calls}  is activated.
+\item[\Opt{--optimize-calls}] Peephole optimization of small
+runtime-functions. Runtime functions like \texttt{'+'}, \texttt{'null?'}, etc. are
+directly inlined with their JavaScript equivalent and do not invoke any
+function-call.
+\item[\Opt{--optimize-boolify}] During boolification do not test against
+\texttt{'false'} if the expression is known to be of type bool.
+\item[\Opt{--optimize-consts}] Store explicit constants (like lists and
+vectors) in global variables, so they are not recreated.
+\item[\OptArg{-O}{ level}] Sets the optimization level (default is
+\OptArg{-O }{ 1}).\\
+Each optimization level enables/disables several flags at once:
+\begin{Description}
+\item[-O0] \Opt{--no-tailrec}  \Opt{--no-inlining}  \Opt{--no-inline-runtime}  \Opt{--no-constant-runtime}  \Opt{--no-propagation}  \Opt{--no-constant-propagation}  \Opt{--no-while}  \Opt{--correct-modulo}  \Opt{--no-optimize-calls}  \Opt{--no-optimize-boolify}  \Opt{--no-optimize-set!}  \OptArg{--max-tail-depth}{ 40} \Opt{--no-var-elimination}  \Opt{--no-optimize-consts}  \Opt{--no-bigloo-runtime-eval}  
+\item[-O1] \Opt{--tailrec}  \Opt{--inlining}  \OptArg{--max-rec-inline}{ 3} \OptArg{--max-inline-size}{ 30} \Opt{--inline-runtime}  \Opt{--constant-runtime}  \Opt{--propagation}  \Opt{--constant-propagation}  \Opt{--while}  \Opt{--no-correct-modulo}  \Opt{--optimize-calls}  \Opt{--optimize-boolify}  \Opt{--optimize-set!}  \OptArg{--max-tail-depth}{ 40} \Opt{--var-elimination}  \Opt{--optimize-consts}  \Opt{--no-bigloo-runtime-eval}  
+\item[-O2] \Opt{--tailrec}  \Opt{--inlining}  \OptArg{--max-rec-inline}{ 1} \OptArg{--max-inline-size}{ 15} \Opt{--no-inline-runtime}  \Opt{--constant-runtime}  \Opt{--propagation}  \Opt{--constant-propagation}  \Opt{--while}  \Opt{--no-correct-modulo}  \Opt{--optimize-calls}  \Opt{--optimize-boolify}  \Opt{--optimize-set!}  \OptArg{--max-tail-depth}{ 40} \Opt{--var-elimination}  \Opt{--optimize-consts}  \Opt{--bigloo-runtime-eval}  
+\item[-O3] \Opt{--tailrec}  \Opt{--inlining}  \OptArg{--max-rec-inline}{ 4} \OptArg{--max-inline-size}{ 45} \Opt{--inline-runtime}  \Opt{--constant-runtime}  \Opt{--propagation}  \Opt{--constant-propagation}  \Opt{--while}  \Opt{--no-correct-modulo}  \Opt{--optimize-calls}  \Opt{--optimize-boolify}  \Opt{--optimize-set!}  \OptArg{--max-tail-depth}{ 40} \Opt{--var-elimination}  \Opt{--optimize-consts}  
+\item[-Obench] \Opt{--tailrec}  \Opt{--inlining}  \OptArg{--max-rec-inline}{ 4} \OptArg{--max-inline-size}{ 45} \Opt{--inline-runtime}  \Opt{--constant-runtime}  \Opt{--propagation}  \Opt{--constant-propagation}  \Opt{--while}  \Opt{--no-correct-modulo}  \Opt{--optimize-calls}  \Opt{--optimize-boolify}  \Opt{--optimize-set!}  \OptArg{--max-tail-depth}{ 40} \Opt{--var-elimination}  \Opt{--optimize-consts}  \Opt{--bigloo-runtime-eval}  
+\end{Description}
+\end{Description}
+\subsection{Trampolines and Call/cc}
+
+\begin{Description}
+\item[\Opt{--trampoline}] Enables trampolines. The given implementation does
+not provide naive trampolines, but a more efficient version that only
+returns trampolines after a constant number of tail-calls.
+\item[\OptArg{--max-tail-depth}{ depth}] Sets the maximum depth of
+consecutive tail-calls before a trampoline is returned. This option is only
+relevant when trampolines are enabled.
+\item[\Opt{--suspend-resume}] Enables \texttt{'suspend/resume'}, a weaker (but
+faster) version of \texttt{'call/cc'}. A call to \texttt{'suspend'} captures the
+current continuation. \texttt{'Suspend'} does not return however, and the only
+way to continue the execution is to invoke the captured continuation. The
+captured continuation can only be invoked once. This form is useful, when the
+program needs to pause, and wait for an event.
+\item[\Opt{--call/cc}] Enables \texttt{'call/cc'}.
+\item[\Opt{--extern-invokes-call/cc}] Assume imported variables (or unresolved
+variables) call \texttt{'call/cc'} (even if they do not have a \texttt{'call/cc'}
+entry in their \texttt{'export'}-clause).
+\end{Description}
+\subsection{Debug}
+
+\begin{Description}
+\item[\Opt{-g}] Adds debugging information.
+\item[\OptArg{-d}{ stage}] Depending on \texttt{'stage'} either print
+the expanded source, or a Scheme-version of the AST at the chosen compilation
+stage (into \Arg{outfile}). If you really need this, have a look at the
+source for valid \texttt{'stage'}s.
+\end{Description}
+\section{Files}
+
+\begin{Description}
+\item[\File{share/runtime.js}] The runtime stripped of
+\texttt{'call/cc'}-related procedures.
+\item[\File{share/runtime_interface.js}] Compiled programs access
+the runtime through the variables declared in this file. Only needed, when
+\texttt{'--constant-runtime'} is not used.
+\item[\File{share/runtime_callcc.js}] The \texttt{'call/cc'} part of
+the runtime. If a program is compiled without \texttt{'call/cc'} or
+\texttt{'suspend/resume'} support, then this file is not needed.
+\item[\File{share/runtime_interface_callcc.js}] Compiled programs
+access the \texttt{'call/cc'} runtime through variables declared in this
+file. Only needed, when the program has been compiled with \texttt{'call/cc'} or
+\texttt{'suspend/resume'} support and
+\texttt{'--constant-runtime'} is not activated.
+\end{Description}
+\section{Modules}
+Bigger programs can be split into modules. In this case the first expression
+of the input-file must be a module-clause. Currently two
+module-clauses are supported. An old deprecated one, and a new one that has
+been modeled after Bigloo.\\
+For the new one see Bigloo. Contrary to Bigloo the file-name and the
+module-name must be the same (thus avoiding the need for an \texttt{'.afile'}).
+This limitation might be changed in future versions. In addition to the Bigloo
+clauses a \texttt{'JS'} and \texttt{'scheme2js-pragma'} clause is supported. The
+\texttt{'JS'} clause serves to import JavaScript variables. The
+\texttt{'scheme2js-pragma'} to add
+additional optimization information for exported variables. It
+is an A-List with the variable-name used as
+key. Here an example with all recognized optimization-clauses:\\
+Explanatory example:\\
+\begin{verbatim}
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include "some-file"
+           "another-file")
+  (export (macro macro1)  ;; a (define-macro (macro1 ..) must be in the source
+          (macro macro2)) ;; same here
+  (export (my-fun::bool arg ...) ;; a function returning a bool.
+          my-var)                ;; export simply a variable
+  (scheme2js-pragma       ;; optimization-information for exported variables.
+    (my-fun (JS "myFun")          ;; use "myFun" as JS id for this variable.
+            (call/cc? #t)           ;; this function may invoke call/cc,
+            (call/cc-params (0 2)))) ;;  but only if arg 0 or 2 invoke call/cc.
+  (JS "some_JS_var"))       ;; import 'some_JS_var' as 'some_JS_var'
+  (JS scheme-var)           ;; import mangled form of 'scheme-var' as 'scheme-var'
+  (JS (scm-var "jsVar")     ;; import 'jsVar' as 'scm-var'
+      (scm-var2 jsVar2)))   ;; imort  'jsVar2' as 'scm-var2' (no mangling)
+\end{verbatim}\\
+Here is an example for the old deprecated module-form:\\
+\begin{verbatim}
+(module my-module          ;; filename must be my-module.scm/sch
+  (import some-other-module
+          and-a-second-module)
+  (include "some-file"
+           "another-file")
+  (export-macros           ;; export (and use in module) macros.
+          (define-macro (macro-name ...) (...))) ;; same syntax as if in module-body.
+  (export (my-fun?
+            (JS js-id)        ;; the JS-id
+            (type bool)    ;; declare (return-)type of variable/function.
+            (constant? #t) ;; must not be changed from the outside
+            (call/cc? #t)  ;; may invoke call/cc
+            (call/cc-params (0 2))) ;; but only if arg 0 or 2 invoke call/cc.
+          my-var           ;; just export the variable without any additional information.
+          my-fun2)         ;; works for functions too.
+  (JS                      ;; import from JavaScript (same syntax as 'export')
+      (time-out-set! (JS setTimeout)) ;; import setTimeout as time-out-set!
+      window))                        ;; import window as window
+\end{verbatim}\\
+The module-name must be equal to the filename (minus path and extension).\\
+When exporting variables, only the variable-name is needed. The
+\texttt{'JS'} entry allows to export functions to JavaScript
+under a different name, and the remaining entries help \Prog{scheme2js} to optimize the
+program.\\
+When module \texttt{'foo'} is imported, then a file foo.scm or
+foo.sch is searched in the include-directories (given with
+\Opt{-I} ).\\
+Modules without any top-level (but with a module-clause) can be used to
+declare JavaScript functions and make them accessible to Scheme modules.
+\section{Infotrons}
+Infotrons are modules for JDA (\URL{http://foundry.maya.com/jda/}).
+When activated with \texttt{'--infotron'} \Prog{scheme2js} recognizes modules starting
+with an \texttt{'infotron'} clause as infotrons and compiles them accordingly.
+Main changes to plain modules are:\\
+- infotrons start with \texttt{'infotron'} instead of \texttt{'module'},\\
+- they must not export any variables or macros\\
+- they can declare \texttt{'uuid'}-clauses (or the more convenient
+\texttt{'uuid-seed'} string which is then used to construct a uuid),\\
+- they can declare \texttt{'properties'} that are accepted during the initial
+   configuration.\\
+- they can define the name for the initial configuration in the
+\texttt{'config-name'} clause. By default \texttt{'config'} is used. and\\
+- they can declare the inputs (\texttt{'iterms'}) and outputs (\texttt{'oterms'})\\
+- top-level must have defines at top.\\
+Example:\\
+\begin{verbatim}
+(infotron jsAlert
+	  (uuid-seed "jsAlert - Florian Loitsch - Inria")
+	  (iterms (trigger_in on_trigger 10))
+	  (oterms close_event_out)
+	  (properties message))
+
+(define (on_trigger msg)
+   (alert config.message)
+   (close_event_out msg))
+\end{verbatim}
+\section{See Also}
+Hop (\URL{http://hop.inria.fr})\\
+JDA (\URL{http://foundry.maya.com/jda/})\\
+R5RS (\URL{http://www.schemers.org/Documents/Standards/R5RS/})
+\section{Bugs}
+Due to limitations in JavaScript, there are no integers (exact numbers).\\
+At the moment \Prog{scheme2js} does not support hygienic macros.\\
+The \texttt{'eval'} function is still missing, too.\\
+
+\section{Author}
+Florian Loitsch\\
+Email: \Email{florian.loitsch@sophia.inria.fr}
+\section{Version}
+Version: 20110717

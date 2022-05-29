@@ -1,0 +1,172 @@
+(define *keyword-list*
+   '("as"
+     "break"
+     "case"
+     "catch"
+     "class"
+     "const"
+     "continue"
+     "default"
+     "delete"
+     "do"
+     "else"
+     "extends"
+     "false"
+     "finally"
+     "for"
+     "function"
+     "if"
+     "import"
+     "in"
+     "instanceof"
+     "is"
+     "namespace"
+     "new"
+     "null"
+     "package"
+     "private"
+     "public"
+     "return"
+     "super"
+     "switch"
+     "this"
+     "throw"
+     "true"
+     "try"
+     "typeof"
+     "use"
+     "var"
+     "void"
+     "while"
+     "with"))
+
+(define *future-reserved-list*
+   '("abstract"
+     "debugger"
+     "enum"
+     "export"
+     "goto"
+     "implements"
+     "interface"
+     "native"
+     "protected"
+     "synchronized"
+     "throws"
+     "transient"
+     "volatile"))
+
+(define *init-lexer* #f)
+
+(define *care-future-reserved* #f)
+
+(define (lexer-init!)
+   (unless *init-lexer*
+           (begin
+             (set! *init-lexer* #t)
+             (for-each (lambda (word)
+		           (putprop! (string->symbol word) 'reserved #t))
+	           *keyword-list*)
+             (if *care-future-reserved*
+                 (for-each (lambda (word)
+	                  (putprop! (string->symbol word) 'reserved #t))
+                    *future-reserved-list*)))))
+
+(define lexer
+   (regular-grammar
+	 ;; TODO: are a010 and a013 really correct?
+	 ((blank        (in #\Space #\Tab #a010 #a012 #a013 #\Newline))
+	  (blank_no_lt  (in #\Space #\Tab #a012))
+	  (nonzero-digit   (in ("19")))
+	  (id_start     (or alpha #\$ #\_))
+	  (id_part      (or alnum #\$ #\_))) ;; TODO: not spec-conform!
+
+
+      ((+ blank)
+       (let ((blanks (the-string)))
+	  (cons blanks (ignore))))
+      
+      ;; LineComment
+      ((:"//" (* all))
+       (let ((cmt (the-string)))
+	  (cons (color :fg "#202020" (it cmt)) (ignore))))
+
+      ;; multi-line comment on one line
+      ((: "/*" (* (or (out #\*) (: (+ #\*) (out #\/ #\*)))) (+ #\*) "/")
+       (let ((cmt (the-string)))
+	  (cons (color :fg "#202020" (it cmt)) (ignore))))
+
+      ((: "/*"
+	  (* (or #\Newline
+		 (out #\*)
+		 (: (+ #\*) (out #\/ #\*))))
+	  (+ #\*) "/")
+       (let ((cmt (the-string)))
+	  (cons (color :fg "#202020" (it cmt)) (ignore))))
+
+      ;; TODO: verify if this is really the correct syntax
+      ((or
+	;; integer constant
+	#\0
+	(: nonzero-digit (* digit))
+	(: (uncase "0x") (+ xdigit))
+	;; floating-point constant
+	(: (+ digit)
+	   (: (in #\e #\E) (? (in #\- #\+)) (+ digit)))
+	(: (or (: (+ digit) #\. (* digit)) (: #\. (+ digit)))
+	   (? (: (in #\e #\E) (? (in #\- #\+)) (+ digit)))))
+       (let ((num (the-string)))
+	  (cons (color :fg "#bb0000" num)
+		(ignore))))
+
+      ((or #\{ #\} #\( #\) #\[ #\] #\. #\; #\, #\| "||" "|="
+	   #\< #\> "<=" ">=" "==" "!=" "===" "!==" #\+ #\- #\* #\% "++" "--"
+	   "<<" ">>" ">>>" #\& #\^ #\! #\~ "&&" #\: #\= "+=" "-="  
+	   "*=" "%=" "<<=" ">>=" ">>>=" "&=" "^=" "/=" #\/ #\?)
+       (let ((tmp (the-string)))
+	  (cons tmp (ignore))))
+
+      ;; TODO: probably not spec-conform
+      ((: #\" (* (or (out #\" #\\ #\Newline) (: #\\ all))) #\")
+       (let ((tmp (the-string)))
+	  (cons (color :fg "#500000" tmp)
+		(ignore))))
+      ((: #\' (* (or (out #\' #\\ #\Newline) (: #\\ all))) #\')
+       (let ((tmp (the-string)))
+	  (cons (color :fg "#500000" tmp)
+		(ignore))))
+
+      ;; Identifiers and Keywords
+      ((: id_start (* id_part))
+       (let* ((symbol (the-symbol))
+	      (symbol-str (the-string)))
+	  (cond
+	     ((eq? symbol 'function)
+	      (cons (color :fg "#101060" (underline (bold symbol-str)))
+		    (ignore)))
+	     ((getprop symbol 'reserved)
+	      (cons (color :fg "#106010" (underline (bold symbol-str)))
+		    (ignore)))
+	     (else
+	      (cons symbol-str (ignore))))))
+      
+      ;; TODO: add regular expressions
+      (all
+       (let ((tmp (the-string)))
+	  (cons tmp (ignore))))
+      ;; error
+      (else
+       (let ((c (the-failure)))
+	  (if (eof-object? c)
+	      '()
+	      (skribe-error 'javascript "Unexpected char" c))))))
+ 
+(define (javascript-fontifier string)
+   (lexer-init!)
+   (with-input-from-string string
+      (lambda ()
+         (read/rp lexer
+                  (current-input-port)))))
+
+(define javascript
+   (language :name "Javascript"
+             :fontifier javascript-fontifier))

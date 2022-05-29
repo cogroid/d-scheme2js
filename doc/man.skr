@@ -1,0 +1,216 @@
+(let* ((le (find-engine 'latex))
+       (man-engine (make-engine 'man
+		      :version 0.001
+		      :delegate (find-engine 'base))))
+   (markup-writer '&man-doc le
+      :action (lambda (n e)
+		 (output n man-engine)))
+
+   (markup-writer '&man-doc man-engine
+      :before (lambda (n e)
+		 (print "\\begin{document}")))
+
+   (markup-writer '&man-begin man-engine
+      :options '(:prog :man-chapter :author :info :title)
+      :before (lambda (n e)
+		 (printf "\\setVersion{~a}\n"
+			 (markup-option n :version))
+		 (printf "\\begin{Name}{~a}{~a}{~a}{~a}{~a}\n"
+			 (markup-option n :man-chapter)
+			 (markup-option n :prog)
+			 (markup-option n :author)
+			 (markup-option n :info)
+			 (markup-option n :title))
+		 )
+      :after (lambda (n e)
+		(printf "\n\\end{Name}\n")))
+   (markup-writer 'linebreak man-engine
+      :after (lambda (n e)
+		 (print "\\\\")))
+   (markup-writer '&man-option man-engine
+      :action (lambda (n e)
+		 (define (is-optional? x)
+		    (or (not x)
+			(let ((x-str (if (symbol? x) (symbol->string x) x)))
+			   (char=? (string-ref x-str 0) #\?))))
+		 (define (without-? x)
+		    (let ((x-str (if (symbol? x) (symbol->string x) x)))
+		       (substring x-str 1 (string-length x-str))))
+		    
+		 (let* ((opt (markup-option n :option))
+			(arg (markup-option n :arg))
+			(opt-optional? (is-optional? opt))
+			(arg-optional? (is-optional? arg)))
+		    (cond
+		       ((and opt arg (not opt-optional?) (not arg-optional?))
+			(printf "\\OptArg{~a}{ ~a}"
+				opt arg))
+		       ((and opt arg (not opt-optional?) arg-optional?)
+			(printf "\\OptoArg{~a}{ ~a}"
+				opt (without-? arg)))
+		       ((and opt arg opt-optional? (not arg-optional?))
+			(printf "\\oOptArg{~a}{ ~a}"
+				(without-? opt) arg))
+		       ((and opt arg opt-optional? arg-optional?)
+			(printf "\\oOptoArg{~a}{ ~a}"
+				opt (without-? arg)))
+		       ((and opt (not opt-optional?))
+			(printf "\\Opt{~a}" opt))
+		       (opt
+			(printf "\\oOpt{~a}" (without-? opt)))
+		       ((and arg (not arg-optional?))
+			(printf "\\Arg{~a}" arg))
+		       (arg
+			(printf "\\oArg{~a}" (without-? arg)))
+		       (else
+			(printf ""))))))
+   (markup-writer '&man-prog man-engine
+      :before (lambda (n e)
+		 (display "\\Prog{"))
+      :after (lambda (n e)
+		 (display "}")))
+   (markup-writer '&man-section man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (printf "\n\\section{~a}\n"
+			 (markup-option n :title))))
+   (markup-writer '&man-ssection man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (printf "\n\\subsection{~a}\n"
+			 (markup-option n :title))))
+   (markup-writer '&man-url man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (display "\\URL{"))
+      :after (lambda (n e)
+		(display "}")))
+   (markup-writer '&man-email man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (display "\\Email{"))
+      :after (lambda (n e)
+		(display "}")))
+   (markup-writer '&man-verb+ man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (display "\\verb+"))
+      :after (lambda (n e)
+		(display "+")))
+   (markup-writer '&man-verb man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (display "\\begin{verbatim}"))
+      :after (lambda (n e)
+		(display "\n\\end{verbatim}")))
+   (markup-writer '&man-desc man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (display "\n\\begin{Description}"))
+      :after (lambda (n e)
+		(display "\n\\end{Description}")))
+   (markup-writer '&man-item man-engine
+      :options '(:title)
+      :before (lambda (n e)
+		 (if (markup-option n :desc)
+		     (begin
+			(display "\n\\item[")
+			(output (markup-option n :desc)
+				e)
+			(display "] "))
+		     (display "\n\\item "))))
+   (markup-writer '&man-tt man-engine
+      :before (lambda (n e)
+		 (display "\\texttt{'"))
+      :after (lambda (n e)
+		(display "'}")))
+   (markup-writer '&man-file man-engine
+      :before (lambda (n e)
+		 (display "\\File{"))
+      :after (lambda (n e)
+		(display "}")))
+   )
+
+(define-markup (man-doc #!rest opt)
+   (new markup
+	(markup '&man-doc)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-option #!rest opt)
+   (new markup
+	(markup '&man-option)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-begin #!rest opt)
+   (new markup
+	(markup '&man-begin)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-prog #!rest opt)
+   (new markup
+	(markup '&man-prog)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-section #!rest opt)
+   (new markup
+	(markup '&man-section)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-ssection #!rest opt)
+   (new markup
+	(markup '&man-ssection)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-url #!rest opt)
+   (new markup
+	(markup '&man-url)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-email #!rest opt)
+   (new markup
+	(markup '&man-email)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-verb+ #!rest opt)
+   (new markup
+	(markup '&man-verb+)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-verb #!rest opt)
+   (new markup
+	(markup '&man-verb)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-desc #!rest opt)
+   (new markup
+	(markup '&man-desc)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-item #!rest opt)
+   (new markup
+	(markup '&man-item)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (ttt #!rest opt)
+   (new markup
+	(markup '&man-tt)
+	(options (the-options opt))
+	(body (the-body opt))))
+
+(define-markup (man-file #!rest opt)
+   (new markup
+	(markup '&man-file)
+	(options (the-options opt))
+	(body (the-body opt))))

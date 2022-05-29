@@ -1,0 +1,17 @@
+all: index.html scheme2js.1 scheme2js-man.html
+
+SKRIBE = skribe
+RM = /bin/rm
+LATEX2MAN = latex2man
+
+index.html: index.skb javascript.skr
+	$(SKRIBE) -o $@ $<
+
+man.tex: man.skb man.skr
+	$(SKRIBE) -t latex -o $@ $<
+
+scheme2js-man.html: man.tex
+	$(LATEX2MAN) -H $< $@
+
+scheme2js.1: man.tex
+	$(LATEX2MAN) $< $@
