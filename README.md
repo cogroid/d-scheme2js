@@ -20,7 +20,7 @@
 
 #### Sponsor me
 
-* By [sponsoring me $150 / month](https://github.com/sponsors/cogroid), you will have access to [sponsorware repositories](https://github.com/cogroid/l-sponsorware), including [cogroid/sw-scheme2js](https://github.com/cogroid/sw-scheme2js).
+* By [sponsoring me $15 / month](https://github.com/sponsors/cogroid), you will have access to [sponsorware repositories](https://github.com/cogroid/l-sponsorware), including [cogroid/sw-scheme2js](https://github.com/cogroid/sw-scheme2js).
 
 * By [being sponsored $450 / month](https://github.com/sponsors/cogroid), I will public this feature to [cogroid/d-scheme2js](https://github.com/cogroid/d-scheme2js)
 
